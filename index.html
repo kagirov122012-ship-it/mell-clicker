@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Mellstroy Clicker</title>
+    <!-- Telegram Web App SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Adsgram SDK -->
+    <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: #0d0d11;
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            touch-action: manipulation;
+        }
+
+        /* Top Header Stats */
+        .header {
+            text-align: center;
+            padding: 15px 10px 5px;
+            background: linear-gradient(180deg, #181822 0%, #0d0d11 100%);
+        }
+
+        .rank-badge {
+            display: inline-block;
+            background: #ffb703;
+            color: #000;
+            font-weight: 800;
+            font-size: 11px;
+            padding: 2px 10px;
+            border-radius: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+
+        .balance {
+            font-size: 32px;
+            font-weight: 900;
+            color: #ffd700;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+            margin-bottom: 4px;
+        }
+
+        .stats-row {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            font-size: 12px;
+            color: #a0a0b0;
+        }
+
+        .stats-row span {
+            color: #2ec4b6;
+            font-weight: bold;
+        }
+
+        /* Navigation Bar */
+        .nav-tabs {
+            display: flex;
+            background: #14141d;
+            border-bottom: 1px solid #222230;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 12px 5px;
+            background: none;
+            border: none;
+            color: #808095;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .tab-btn.active {
+            color: #ffd700;
+            border-bottom-color: #ffd700;
+            background: rgba(255, 215, 0, 0.05);
+        }
+
+        /* Views */
+        .view {
+            display: none;
+            padding: 15px;
+            flex: 1;
+            padding-bottom: 30px;
+        }
+
+        .view.active {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Clicker Area */
+        .clicker-container {
+            position: relative;
+            margin: 20px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .avatar-frame {
+            width: 220px;
+            height: 220px;
+            border-radius: 50%;
+            border: 6px solid #ffd700;
+            box-shadow: 0 0 25px rgba(255, 215, 0, 0.4);
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.08s ease;
+            position: relative;
+            background: #1e1e2d;
+        }
+
+        .avatar-frame:active {
+            transform: scale(0.95);
+        }
+
+        .avatar-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Floating Click Effect */
+        .click-pop {
+            position: absolute;
+            color: #ffd700;
+            font-size: 24px;
+            font-weight: 900;
+            pointer-events: none;
+            animation: floatUp 0.8s ease-out forwards;
+            text-shadow: 0 0 5px #000;
+            z-index: 100;
+        }
+
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-70px) scale(1.3); }
+        }
+
+        /* Cards & Lists */
+        .card {
+            width: 100%;
+            background: #181824;
+            border: 1px solid #28283d;
+            border-radius: 12px;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-info h4 {
+            font-size: 14px;
+            color: #fff;
+            margin-bottom: 3px;
+        }
+
+        .card-info p {
+            font-size: 11px;
+            color: #8888a0;
+        }
+
+        .card-btn {
+            background: linear-gradient(135deg, #ffd700, #ff9900);
+            border: none;
+            color: #000;
+            font-weight: 800;
+            padding: 8px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .card-btn:disabled {
+            background: #333345;
+            color: #666;
+            cursor: not-allowed;
+        }
+
+        .ad-btn {
+            background: linear-gradient(135deg, #a855f7, #6366f1);
+            color: #fff;
+        }
+
+        /* Wheel of Fortune Section */
+        .wheel-box {
+            position: relative;
+            width: 280px;
+            height: 280px;
+            margin: 20px auto;
+        }
+
+        .wheel-pointer {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 14px solid transparent;
+            border-right: 14px solid transparent;
+            border-top: 22px solid #ffd700;
+            z-index: 20;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));
+        }
+
+        #wheel-canvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8), 0 0 10px rgba(255,215,0,0.2);
+            transition: transform 4s cubic-bezier(0.15, 0.9, 0.2, 1);
+        }
+
+        .section-title {
+            width: 100%;
+            font-size: 14px;
+            font-weight: 800;
+            color: #ffd700;
+            margin: 15px 0 10px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Referral Box */
+        .ref-box {
+            background: #181824;
+            border: 1px dashed #ffd700;
+            padding: 15px;
+            border-radius: 12px;
+            width: 100%;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .ref-link-input {
+            width: 100%;
+            padding: 10px;
+            background: #0d0d11;
+            border: 1px solid #333345;
+            color: #2ec4b6;
+            border-radius: 6px;
+            font-size: 12px;
+            margin: 10px 0;
+            text-align: center;
+        }
+
+        .quest-progress {
+            font-size: 11px;
+            color: #2ec4b6;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Stats -->
+    <div class="header">
+        <div class="rank-badge" id="rank-name">БРОДЯГА</div>
+        <div class="balance"><span id="balance-val">0</span> ₽</div>
+        <div class="stats-row">
+            <div>Тап: <span id="click-power-val">+1</span> ₽</div>
+            <div>Пассив: <span id="passive-income-val">+0</span> ₽/сек</div>
+        </div>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="nav-tabs">
+        <button class="tab-btn active" onclick="switchTab('game-tab', this)">🎮 ИГРА</button>
+        <button class="tab-btn" onclick="switchTab('shop-tab', this)">🏪 МАГАЗИН</button>
+        <button class="tab-btn" onclick="switchTab('casino-tab', this)">🎰 КАЗИНО</button>
+        <button class="tab-btn" onclick="switchTab('ref-tab', this)">🎁 РЕФЕРАЛЫ</button>
+    </div>
+
+    <!-- TAB 1: GAME -->
+    <div id="game-tab" class="view active">
+        
+        <!-- Ad Watch Banner -->
+        <div class="card" style="border: 1px solid #a855f7;">
+            <div class="card-info">
+                <h4 style="color: #c084fc;">🎬 Смотреть рекламу</h4>
+                <p>Получи +10 000 ₽ моментально за просмотр</p>
+            </div>
+            <button class="card-btn ad-btn" onclick="watchAdReward()">СМОТРЕТЬ</button>
+        </div>
+
+        <!-- Clicker Main Target -->
+        <div class="clicker-container">
+            <div class="avatar-frame" id="click-target">
+                <!-- Mellstroy Avatar -->
+                <img src="https://i.ibb.co/6P2T24V/mellstroy.jpg" alt="Mellstroy" class="avatar-img" onerror="this.src='https://via.placeholder.com/220/1e1e2d/ffd700?text=MELLSTROY'">
+            </div>
+        </div>
+
+        <div class="section-title">🏆 Сессионные квесты</div>
+        
+        <div class="card">
+            <div class="card-info">
+                <h4>100 кликов</h4>
+                <p>Награда: <span style="color:#ffd700">+1,000 ₽</span></p>
+            </div>
+            <div id="q1-status" class="quest-progress">0/100</div>
+        </div>
+
+        <div class="card">
+            <div class="card-info">
+                <h4>500 кликов</h4>
+                <p>Награда: <span style="color:#ffd700">+10,000 ₽</span></p>
+            </div>
+            <div id="q2-status" class="quest-progress">0/500</div>
+        </div>
+    </div>
+
+    <!-- TAB 2: SHOP -->
+    <div id="shop-tab" class="view">
+        <div class="section-title">⚡ Прокачка клика</div>
+        <div class="card">
+            <div class="card-info">
+                <h4>Энергетик Mellstroy</h4>
+                <p>+1 ₽ к клику | Цена: <span id="c-cost-1">100</span> ₽</p>
+            </div>
+            <button class="card-btn" onclick="buyClickUpgrade(1, 100, 1)">КУПИТЬ</button>
+        </div>
+        <div class="card">
+            <div class="card-info">
+                <h4>Золотые часы</h4>
+                <p>+5 ₽ к клику | Цена: <span id="c-cost-2">500</span> ₽</p>
+            </div>
+            <button class="card-btn" onclick="buyClickUpgrade(5, 500, 2)">КУПИТЬ</button>
+        </div>
+
+        <div class="section-title">📈 Пассивный доход</div>
+        <div class="card">
+            <div class="card-info">
+                <h4>Стримерская студия</h4>
+                <p>+10 ₽/сек | Цена: <span id="p-cost-1">1,000</span> ₽</p>
+            </div>
+            <button class="card-btn" onclick="buyPassiveUpgrade(10, 1000, 1)">КУПИТЬ</button>
+        </div>
+        <div class="card">
+            <div class="card-info">
+                <h4>Казино Партнерка</h4>
+                <p>+100 ₽/сек | Цена: <span id="p-cost-2">10,000</span> ₽</p>
+            </div>
+            <button class="card-btn" onclick="buyPassiveUpgrade(100, 10000, 2)">КУПИТЬ</button>
+        </div>
+    </div>
+
+    <!-- TAB 3: CASINO -->
+    <div id="casino-tab" class="view">
+        <div class="section-title" style="text-align: center;">🎡 Колесо Фортуны Mellstroy</div>
+        <p style="font-size: 12px; color: #8888a0; text-align: center;">Испытай удачу! Главный приз — Золотой Джекпот!</p>
+
+        <div class="wheel-box">
+            <div class="wheel-pointer"></div>
+            <canvas id="wheel-canvas" width="300" height="300"></canvas>
+        </div>
+
+        <div style="display: flex; gap: 10px; width: 100%;">
+            <button class="card-btn" style="flex: 1; padding: 12px;" onclick="spinWheelByCoins()">Крутить за 5 000 ₽</button>
+            <button class="card-btn ad-btn" style="flex: 1; padding: 12px;" onclick="spinWheelByAd()">Крутить за 🎬 Рекламу</button>
+        </div>
+    </div>
+
+    <!-- TAB 4: REFERRALS -->
+    <div id="ref-tab" class="view">
+        <div class="section-title">👥 Реферальная система</div>
+        <div class="ref-box">
+            <p style="font-size: 13px;">Приглашай друзей и получай <b style="color:#ffd700;">+25,000 ₽</b> за каждого бота!</p>
+            <input type="text" id="ref-link-input" class="ref-link-input" readonly value="https://t.me/mell_syndicate_app_bot?start=ref_user">
+            <button class="card-btn" style="width: 100%; padding: 12px;" onclick="shareReferral()">ПРИГЛАСИТЬ ДРУГА</button>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 1. НАСТРОЙКИ И ИНИЦИАЛИЗАЦИЯ
+        // ==========================================
+        const ADSGRAM_BLOCK_ID = "39202"; // Твой реальный Block ID
+        const BOT_USERNAME = "mell_syndicate_app_bot"; // Твой бот
+
+        let tg = window.Telegram ? window.Telegram.WebApp : null;
+        if (tg) {
+            tg.expand();
+            tg.ready();
+        }
+
+        // Пользовательские данные
+        let userId = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user.id : "123456789";
+        
+        let state = {
+            balance: 0,
+            clickPower: 1,
+            passiveIncome: 0,
+            totalClicks: 0,
+            q1Claimed: false,
+            q2Claimed: false
+        };
+
+        // Загрузка состояния из localStorage
+        function loadState() {
+            const saved = localStorage.getItem("mell_clicker_save");
+            if (saved) {
+                try {
+                    state = Object.assign(state, JSON.parse(saved));
+                } catch(e){}
+            }
+            updateUI();
+        }
+
+        function saveState() {
+            localStorage.setItem("mell_clicker_save", JSON.stringify(state));
+        }
+
+        function updateUI() {
+            document.getElementById('balance-val').innerText = state.balance.toLocaleString('ru-RU');
+            document.getElementById('click-power-val').innerText = "+" + state.clickPower;
+            document.getElementById('passive-income-val').innerText = "+" + state.passiveIncome;
+
+            // Квесты
+            document.getElementById('q1-status').innerText = state.q1Claimed ? "ВЫПОЛНЕНО ✓" : `${Math.min(state.totalClicks, 100)}/100`;
+            document.getElementById('q2-status').innerText = state.q2Claimed ? "ВЫПОЛНЕНО ✓" : `${Math.min(state.totalClicks, 500)}/500`;
+
+            // Реферальная ссылка
+            document.getElementById('ref-link-input').value = `https://t.me/${BOT_USERNAME}?start=ref_${userId}`;
+        }
+
+        // ==========================================
+        // 2. ИНТЕГРАЦИЯ ADSGRAM (ИСПРАВЛЕНА)
+        // ==========================================
+        let AdController = null;
+
+        function initAdsgram() {
+            if (window.Adsgram) {
+                AdController = window.Adsgram.init({ blockId: ADSGRAM_BLOCK_ID });
+            }
+        }
+
+        async function showAdWithReward(onSuccess) {
+            if (!AdController) {
+                initAdsgram();
+            }
+
+            if (!AdController) {
+                alert("Ошибка инициализации Adsgram. Проверьте подключение к интернету или отключите AdBlock.");
+                return;
+            }
+
+            try {
+                // Показываем рекламу и проверяем, досмотрел ли её игрок
+                const result = await AdController.show();
+                if (result && result.done) {
+                    onSuccess(); // Награду выдаем ТОЛЬКО при успешном просмотре
+                } else {
+                    alert("Нужно досмотреть рекламу до конца, чтобы получить награду!");
+                }
+            } catch (error) {
+                console.error("Adsgram error:", error);
+                alert("Не удалось загрузить рекламу. Попробуйте позже.");
+            }
+        }
+
+        // Просмотр рекламы за 10 000 ₽ в главном меню
+        function watchAdReward() {
+            showAdWithReward(() => {
+                state.balance += 10000;
+                saveState();
+                updateUI();
+                alert("🎉 Награда +10 000 ₽ получена!");
+            });
+        }
+
+        // ==========================================
+        // 3. ЛОГИКА КЛИКЕРА И ТАБОВ
+        // ==========================================
+        function switchTab(tabId, btn) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            btn.classList.add('active');
+        }
+
+        const clickTarget = document.getElementById('click-target');
+        clickTarget.addEventListener('click', (e) => {
+            state.balance += state.clickPower;
+            state.totalClicks += 1;
+
+            // Проверка квестов
+            if (!state.q1Claimed && state.totalClicks >= 100) {
+                state.q1Claimed = true;
+                state.balance += 1000;
+                alert("Квест выполнен! +1 000 ₽");
+            }
+            if (!state.q2Claimed && state.totalClicks >= 500) {
+                state.q2Claimed = true;
+                state.balance += 10000;
+                alert("Квест выполнен! +10 000 ₽");
+            }
+
+            // Анимация числа
+            showClickPop(e);
+
+            saveState();
+            updateUI();
+        });
+
+        function showClickPop(e) {
+            const rect = clickTarget.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            const pop = document.createElement('div');
+            pop.className = 'click-pop';
+            pop.innerText = `+${state.clickPower} ₽`;
+            pop.style.left = `${x}px`;
+            pop.style.top = `${y}px`;
+
+            clickTarget.appendChild(pop);
+            setTimeout(() => pop.remove(), 800);
+        }
+
+        // Пассивный доход раз в секунду
+        setInterval(() => {
+            if (state.passiveIncome > 0) {
+                state.balance += state.passiveIncome;
+                saveState();
+                updateUI();
+            }
+        }, 1000);
+
+        // Покупка улучшений
+        function buyClickUpgrade(addPower, cost, id) {
+            if (state.balance >= cost) {
+                state.balance -= cost;
+                state.clickPower += addPower;
+                saveState();
+                updateUI();
+                alert("Улучшение успешно куплено!");
+            } else {
+                alert("Недостаточно средств!");
+            }
+        }
+
+        function buyPassiveUpgrade(addPassive, cost, id) {
+            if (state.balance >= cost) {
+                state.balance -= cost;
+                state.passiveIncome += addPassive;
+                saveState();
+                updateUI();
+                alert("Пассивный доход увеличен!");
+            } else {
+                alert("Недостаточно средств!");
+            }
+        }
+
+        // ==========================================
+        // 4. КОЛЕСО ФОРТУНЫ (ИСПРАВЛЕНО И СИНХРОНИЗИРОВАНО)
+        // ==========================================
+        const sectors = [
+            { label: "ДЖЕКПОТ", reward: 1000000, color: "#FFD700", textColor: "#000" }, // 0: Золотой Джекпот
+            { label: "5 000 ₽", reward: 5000, color: "#8A2BE2", textColor: "#FFF" },    // 1: Фиолетовый (Бронза)
+            { label: "25 000 ₽", reward: 25000, color: "#1E90FF", textColor: "#FFF" },  // 2: Синий (Серебро)
+            { label: "0 ₽", reward: 0, color: "#FF4500", textColor: "#FFF" },           // 3: Красный (Пусто)
+            { label: "10 000 ₽", reward: 10000, color: "#2ECC71", textColor: "#000" },  // 4: Зеленый
+            { label: "100 000 ₽", reward: 100000, color: "#FFA500", textColor: "#000" },// 5: Оранжевый
+            { label: "2 000 ₽", reward: 2000, color: "#8A2BE2", textColor: "#FFF" },    // 6: Фиолетовый
+            { label: "50 000 ₽", reward: 50000, color: "#00FFFF", textColor: "#000" }   // 7: Голубой
+        ];
+
+        let currentRotation = 0;
+        let isSpinning = false;
+        const canvas = document.getElementById('wheel-canvas');
+        const ctx = canvas.getContext('2d');
+
+        function drawWheel() {
+            const numSectors = sectors.length;
+            const arc = (2 * Math.PI) / numSectors;
+            const radius = canvas.width / 2;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            for (let i = 0; i < numSectors; i++) {
+                const angle = i * arc - Math.PI / 2; // Старт с 12 часов
+
+                // Сектор
+                ctx.beginPath();
+                ctx.fillStyle = sectors[i].color;
+                ctx.moveTo(radius, radius);
+                ctx.arc(radius, radius, radius - 5, angle, angle + arc);
+                ctx.lineTo(radius, radius);
+                ctx.fill();
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = "#14141d";
+                ctx.stroke();
+
+                // Текст сектора
+                ctx.save();
+                ctx.translate(radius, radius);
+                ctx.rotate(angle + arc / 2 + Math.PI / 2);
+                ctx.fillStyle = sectors[i].textColor;
+                ctx.font = "bold 13px Arial";
+                ctx.textAlign = "center";
+                ctx.fillText(sectors[i].label, 0, -radius + 40);
+                ctx.restore();
+            }
+        }
+
+        function spinWheelToSector(winIndex, onComplete) {
+            if (isSpinning) return;
+            isSpinning = true;
+
+            const totalSectors = sectors.length;
+            const sectorAngle = 360 / totalSectors;
+
+            // Точный центр сектор-победителя
+            const sectorCenter = winIndex * sectorAngle + sectorAngle / 2;
+            const targetStopAngle = (360 - sectorCenter) % 360;
+
+            const currentMod = currentRotation % 360;
+            const angleDiff = (targetStopAngle - currentMod + 360) % 360;
+
+            // 5 полных оборотов + точный угол
+            const nextRotation = currentRotation + 1800 + angleDiff;
+            currentRotation = nextRotation;
+
+            canvas.style.transform = `rotate(${nextRotation}deg)`;
+
+            setTimeout(() => {
+                isSpinning = false;
+                const wonPrize = sectors[winIndex];
+                
+                // Начисление награды
+                state.balance += wonPrize.reward;
+                saveState();
+                updateUI();
+
+                if (wonPrize.reward > 0) {
+                    alert(`🎉 Выпал сектор: ${wonPrize.label}! Вы выиграли ${wonPrize.reward.toLocaleString('ru-RU')} ₽!`);
+                } else {
+                    alert("😔 Увы! Выпал сектор 0 ₽. Повезет в следующий раз!");
+                }
+
+                if (onComplete) onComplete();
+            }, 4000);
+        }
+
+        function spinWheelByCoins() {
+            if (isSpinning) return;
+            if (state.balance < 5000) {
+                alert("Недостаточно средств! Нужно 5 000 ₽.");
+                return;
+            }
+            state.balance -= 5000;
+            saveState();
+            updateUI();
+
+            // Случайный сектор с вероятностью
+            const randomIndex = Math.floor(Math.random() * sectors.length);
+            spinWheelToSector(randomIndex);
+        }
+
+        function spinWheelByAd() {
+            if (isSpinning) return;
+            showAdWithReward(() => {
+                const randomIndex = Math.floor(Math.random() * sectors.length);
+                spinWheelToSector(randomIndex);
+            });
+        }
+
+        // ==========================================
+        // 5. РЕФЕРАЛЬНАЯ СИСТЕМА (ИСПРАВЛЕНА)
+        // ==========================================
+        function shareReferral() {
+            const refLink = `https://t.me/${BOT_USERNAME}?start=ref_${userId}`;
+            const shareText = "🔥 Сыграй в Mellstroy Clicker со мной и забирай бонусы!";
+            const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent(shareText)}`;
+
+            if (tg && tg.openTelegramLink) {
+                tg.openTelegramLink(shareUrl);
+            } else {
+                window.open(shareUrl, '_blank');
+            }
+        }
+
+        // Запуск
+        window.onload = () => {
+            loadState();
+            drawWheel();
+            initAdsgram();
+        };
+    </script>
+</body>
+</html>
+ 
