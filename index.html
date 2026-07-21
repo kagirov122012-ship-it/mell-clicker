@@ -1,0 +1,804 @@
+ <!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Mellstroy Syndicate - Меллстройность</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+      outline: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: #08080c;
+      color: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Шапка игрока */
+    .header {
+      background: linear-gradient(180deg, #181826 0%, #08080c 100%);
+      padding: 12px 15px;
+      text-align: center;
+      border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+    }
+    .status-badge {
+      display: inline-block;
+      background: rgba(255, 215, 0, 0.12);
+      color: #ffd700;
+      padding: 4px 14px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+      border: 1px solid rgba(255, 215, 0, 0.35);
+    }
+    .balance {
+      font-size: 36px;
+      font-weight: 900;
+      color: #ffd700;
+      text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+      letter-spacing: 0.5px;
+    }
+    .stats-row {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      font-size: 11px;
+      color: #8a8a9e;
+      margin-top: 4px;
+    }
+    .stats-row span { color: #00ff88; font-weight: bold; }
+
+    /* Навигация */
+    .main-nav {
+      display: flex;
+      background: #11111a;
+      border-bottom: 1px solid #222232;
+      overflow-x: auto;
+    }
+    .nav-btn {
+      flex: 1;
+      min-width: 70px;
+      padding: 12px 4px;
+      background: none;
+      border: none;
+      color: #71718a;
+      font-weight: 800;
+      font-size: 11px;
+      cursor: pointer;
+      transition: 0.2s;
+      white-space: nowrap;
+    }
+    .nav-btn.active {
+      color: #ffd700;
+      background: rgba(255, 215, 0, 0.08);
+      border-bottom: 3px solid #ffd700;
+    }
+
+    /* Контент вкладок */
+    .tab-content {
+      flex: 1;
+      display: none;
+      padding: 15px;
+      overflow-y: auto;
+    }
+    .tab-content.active { display: block; }
+
+    /* Кликер */
+    .click-area {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100%;
+      position: relative;
+    }
+
+    /* Круглая кнопка с фото */
+    .main-click-btn {
+      width: 220px;
+      height: 220px;
+      border-radius: 50%;
+      border: 6px solid #ffd700;
+      box-shadow: 0 0 45px rgba(255, 215, 0, 0.35);
+      position: relative;
+      cursor: pointer;
+      overflow: hidden;
+      transition: transform 0.05s ease;
+      touch-action: manipulation;
+      background: #111;
+    }
+    .main-click-btn img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      pointer-events: none;
+    }
+    .main-click-btn:active { transform: scale(0.92); }
+
+    /* Шкала Энергии */
+    .energy-box {
+      width: 100%;
+      max-width: 280px;
+      margin-top: 20px;
+      background: #141420;
+      padding: 10px 14px;
+      border-radius: 12px;
+      border: 1px solid #252538;
+      text-align: center;
+    }
+    .energy-info {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      font-weight: bold;
+      color: #ffaa00;
+      margin-bottom: 6px;
+    }
+    .energy-bar-bg {
+      width: 100%;
+      height: 10px;
+      background: #09090f;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .energy-bar-fill {
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, #ffaa00, #ffd700);
+      transition: width 0.2s ease;
+    }
+
+    /* Кнопка Форсаж (х5) */
+    .turbo-btn {
+      margin-top: 12px;
+      background: linear-gradient(90deg, #ff0055, #ff5500);
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-weight: 900;
+      font-size: 12px;
+      cursor: pointer;
+      box-shadow: 0 0 15px rgba(255, 0, 85, 0.4);
+    }
+    .turbo-btn:disabled { background: #333; box-shadow: none; color: #777; }
+
+    /* Всплывающие цифры */
+    .floating-text {
+      position: absolute;
+      font-size: 32px;
+      font-weight: 900;
+      color: #ffd700;
+      text-shadow: 0 0 10px rgba(0,0,0,0.9);
+      pointer-events: none;
+      animation: floatAnim 0.75s ease-out forwards;
+      z-index: 100;
+    }
+    @keyframes floatAnim {
+      0% { opacity: 1; transform: translateY(0) scale(1); }
+      100% { opacity: 0; transform: translateY(-90px) scale(1.3); }
+    }
+
+    /* Подвкладки магазина */
+    .sub-nav {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    .sub-btn {
+      flex: 1;
+      padding: 10px;
+      background: #181826;
+      border: 1px solid #28283d;
+      border-radius: 10px;
+      color: #aaa;
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .sub-btn.active {
+      background: #ffd700;
+      color: #000;
+      border-color: #ffd700;
+    }
+
+    /* Карточки */
+    .item-card {
+      background: #141422;
+      border: 1px solid #222236;
+      border-radius: 14px;
+      padding: 12px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .item-icon {
+      font-size: 32px;
+      background: #1e1e2e;
+      width: 50px;
+      height: 50px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .item-info { flex: 1; }
+    .item-title { font-size: 14px; font-weight: bold; color: #fff; }
+    .item-desc { font-size: 11px; color: #8888a0; margin: 2px 0 4px; }
+    .item-stats { font-size: 11px; color: #00ff88; font-weight: bold; }
+    .buy-btn {
+      background: #ffd700;
+      color: #000;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 10px;
+      font-weight: 900;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .buy-btn:disabled { background: #222230; color: #555566; }
+
+    /* Слот-машина */
+    .slots-container {
+      background: #12121c;
+      border: 2px solid #ffd700;
+      border-radius: 20px;
+      padding: 18px 12px;
+      text-align: center;
+      box-shadow: 0 0 30px rgba(255, 215, 0, 0.15);
+    }
+    .reels-box {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin: 15px 0;
+    }
+    .reel {
+      width: 70px;
+      height: 80px;
+      background: #08080e;
+      border: 2px solid #28283f;
+      border-radius: 12px;
+      font-size: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .bet-controls {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    .bet-btn {
+      background: #1c1c2b;
+      border: 1px solid #303048;
+      color: #fff;
+      padding: 8px;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 11px;
+      cursor: pointer;
+    }
+    .spin-btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(90deg, #ff0055 0%, #ff5500 100%);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+    .spin-btn:disabled { background: #333; color: #777; }
+    .casino-msg { margin-top: 12px; font-weight: bold; font-size: 13px; min-height: 18px; }
+
+    /* Задания и Рефералка */
+    .task-card {
+      background: #141422;
+      border: 1px solid #222236;
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="status-badge" id="userStatus">Новичковость</div>
+    <div class="balance" id="balanceDisplay">0 ₽</div>
+    <div class="stats-row">
+      <div>Таповость: +<span id="tpcDisplay">1</span> ₽</div>
+      <div>Пассивность: +<span id="tpsDisplay">0</span> ₽/сек</div>
+    </div>
+  </div>
+
+  <div class="main-nav">
+    <button class="nav-btn active" onclick="switchMainTab('clickerTab', this)">🎮 ИГРОВость</button>
+    <button class="nav-btn" onclick="switchMainTab('shopTab', this)">🛍 МАГАЗаность</button>
+    <button class="nav-btn" onclick="switchMainTab('casinoTab', this)">🎰 КАЗИНость</button>
+    <button class="nav-btn" onclick="switchMainTab('bonusTab', this)">🎁 БОНУСтность</button>
+    <button class="nav-btn" onclick="switchMainTab('friendsTab', this)">👥 ДРУЖественность</button>
+  </div>
+
+  <div id="clickerTab" class="tab-content active">
+    <div class="click-area">
+      
+      <div class="main-click-btn" id="clickBtn">
+        <img src="https://i.postimg.cc/m2m33ZzK/mellstroy.jpg" id="clickImg" alt="Меллстройность">
+      </div>
+
+      <div class="energy-box">
+        <div class="energy-info">
+          <span>⚡ Энергичность:</span>
+          <span id="energyText">1000 / 1000</span>
+        </div>
+        <div class="energy-bar-bg">
+          <div class="energy-bar-fill" id="energyFill"></div>
+        </div>
+      </div>
+
+      <button class="turbo-btn" id="turboBtn" onclick="activateTurbo()">🔥 РЕЖИМ БЕЗУМНОСТИ (х5)</button>
+    </div>
+  </div>
+
+  <div id="shopTab" class="tab-content">
+    <div class="sub-nav">
+      <button class="sub-btn active" onclick="switchShopSubTab('clickUpgrades', this)">⚡ Таповость</button>
+      <button class="sub-btn" onclick="switchShopSubTab('businessUpgrades', this)">💼 Бизнесность</button>
+    </div>
+    <div id="clickUpgrades"></div>
+    <div id="businessUpgrades" style="display:none;"></div>
+  </div>
+
+  <div id="casinoTab" class="tab-content">
+    <div class="slots-container">
+      <h3>🎰 АЗАРТНОСТЬ И СЛОТЫ</h3>
+      <p style="font-size:11px; color:#8a8a9e; margin-top:4px;">Собери 3 одинаковых символа заносности!</p>
+      
+      <div class="reels-box">
+        <div class="reel" id="reel1">🎰</div>
+        <div class="reel" id="reel2">🎰</div>
+        <div class="reel" id="reel3">🎰</div>
+      </div>
+
+      <div style="font-size:12px; color:#aaa; margin-bottom:8px;">Ставочность: <b id="betDisplay" style="color:#ffd700">100 ₽</b></div>
+
+      <div class="bet-controls">
+        <button class="bet-btn" onclick="setBet(100)">100 ₽</button>
+        <button class="bet-btn" onclick="setBet(1000)">1,000 ₽</button>
+        <button class="bet-btn" onclick="setBet(10000)">10,000 ₽</button>
+        <button class="bet-btn" onclick="modifyBet(0.5)">/2</button>
+        <button class="bet-btn" onclick="modifyBet(2)">x2</button>
+        <button class="bet-btn" onclick="setBetAllIn()" style="color:#ff0055">ALL IN</button>
+      </div>
+
+      <button class="spin-btn" id="spinBtn" onclick="spinSlots()">КРУТИТЬ НА ЗАНОС!</button>
+      <div class="casino-msg" id="casinoMsg"></div>
+    </div>
+  </div>
+
+  <div id="bonusTab" class="tab-content">
+    <h3 style="color:#ffd700; margin-bottom:12px;">🎁 ЕЖЕДНЕВНАЯ БОНУСТНОСТЬ</h3>
+    
+    <div class="task-card">
+      <div>
+        <div style="font-weight:bold;">Ежедневный халявный занос</div>
+        <div style="font-size:11px; color:#888;">Забери +25,000 ₽ просто так</div>
+      </div>
+      <button class="buy-btn" id="dailyBtn" onclick="claimDaily()">ЗАБРАТЬ</button>
+    </div>
+
+    <h4 style="color:#fff; margin:20px 0 10px;">📋 ЗАДАНИЯ НА БОГАТОСТЬ:</h4>
+
+    <div class="task-card">
+      <div>
+        <div style="font-weight:bold;">Подписка на каналность</div>
+        <div style="font-size:11px; color:#888;">+100,000 ₽ на балансность</div>
+      </div>
+      <button class="buy-btn" onclick="doTask('sub', 100000, this)">ВЫПОЛНИТЬ</button>
+    </div>
+
+    <div class="task-card">
+      <div>
+        <div style="font-weight:bold;">Сделать 500 таповостей</div>
+        <div style="font-size:11px; color:#888;">+50,000 ₽ на балансность</div>
+      </div>
+      <button class="buy-btn" onclick="doTask('clicks', 50000, this)">ЗАБРАТЬ</button>
+    </div>
+  </div>
+
+  <div id="friendsTab" class="tab-content">
+    <div style="text-align:center; padding:20px 10px;">
+      <div style="font-size:50px;">👥</div>
+      <h3 style="color:#ffd700; margin-top:10px;">ПРИГЛАШАЙ КОРЕШЕЙ</h3>
+      <p style="font-size:12px; color:#aaa; margin:8px 0 20px;">Получай +50,000 ₽ за каждого приведенного пацана!</p>
+      
+      <div class="task-card" style="justify-content:center; gap:10px;">
+        <span style="font-size:12px; color:#00ff88;">Приглашено корешей: <b id="friendsCount">0</b></span>
+      </div>
+
+      <button class="spin-btn" style="margin-top:15px; background:linear-gradient(90deg, #0088cc, #005588);" onclick="shareRef()">
+        ПОДЕЛИТЬСЯ ССЫЛКОЙ
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const tg = window.Telegram?.WebApp;
+    if (tg) { tg.expand(); tg.ready(); }
+
+    // --- ЗВУКОВОЙ СИНТЕЗАТОР ---
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+
+    function initAudio() {
+      if (!audioCtx) audioCtx = new AudioContext();
+    }
+
+    function playSound(type) {
+      initAudio();
+      if (!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      const now = audioCtx.currentTime;
+
+      if (type === 'click') {
+        osc.frequency.setValueAtTime(450, now);
+        osc.frequency.exponentialRampToValueAtTime(900, now + 0.04);
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.04);
+        osc.start(now); osc.stop(now + 0.04);
+      } else if (type === 'buy') {
+        osc.frequency.setValueAtTime(300, now);
+        osc.frequency.setValueAtTime(650, now + 0.08);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+        osc.start(now); osc.stop(now + 0.2);
+      } else if (type === 'win') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(520, now);
+        osc.frequency.setValueAtTime(1040, now + 0.15);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+        osc.start(now); osc.stop(now + 0.35);
+      }
+    }
+
+    // --- СОСТОЯНИЕ ИГРЫ ---
+    let state = {
+      balance: 0,
+      clickPower: 1,
+      passiveIncome: 0,
+      energy: 1000,
+      maxEnergy: 1000,
+      currentBet: 100,
+      totalClicks: 0,
+      friendsCount: 0,
+      isTurbo: false,
+      turboTime: 0,
+      lastDaily: 0,
+      clickUpgrades: [
+        { id: 'c1', name: 'Крепкая пальцевость', icon: '🤏', cost: 25, addPower: 1, count: 0, desc: '+1 к силе тапа.' },
+        { id: 'c2', name: 'Заряженность энергетиком', icon: '⚡', cost: 150, addPower: 5, count: 0, desc: 'Заряжает пальцы на супер-скорость.' },
+        { id: 'c3', name: 'Авто-Кликерность', icon: '🤖', cost: 800, addPower: 25, count: 0, desc: 'Помогает делать жесткие тапы.' },
+        { id: 'c4', name: 'Золотая Мышковость', icon: '🖱', cost: 4000, addPower: 100, count: 0, desc: 'Приносит золотые заносы.' },
+        { id: 'c5', name: 'Нейросетевая Таповость', icon: '🧠', cost: 20000, addPower: 500, count: 0, desc: 'ИИ кликает за тебя с бешеной силой.' }
+      ],
+      businessUpgrades: [
+        { id: 'b1', name: 'Шаурмичная богатость', icon: '🥙', cost: 50, addIncome: 1, count: 0, desc: 'Первый пассивный бизнес у метро.' },
+        { id: 'b2', name: 'Кофейная доходность', icon: '☕', cost: 300, addIncome: 6, count: 0, desc: 'Продавай кофе хипстерам.' },
+        { id: 'b3', name: 'Стрим-Хаусность', icon: '🎙', cost: 1500, addIncome: 30, count: 0, desc: 'Собирай донаты на стримах.' },
+        { id: 'b4', name: 'Казино Клубность', icon: '🎰', cost: 8000, addIncome: 150, count: 0, desc: 'Собственное заведение с заносом.' },
+        { id: 'b5', name: 'Крипто-Фермерность', icon: '🖥', cost: 40000, addIncome: 800, count: 0, desc: 'Майнинг биткоинов 24/7.' }
+      ]
+    };
+
+    const saved = localStorage.getItem('mell_syndicate_v3');
+    if (saved) {
+      try { Object.assign(state, JSON.parse(saved)); } catch(e){}
+    }
+
+    function fmt(n) { return Math.floor(n).toLocaleString('ru-RU'); }
+
+    function updateStatus() {
+      const b = state.balance;
+      const el = document.getElementById('userStatus');
+      if (b < 1000) el.innerText = 'Новичковость';
+      else if (b < 25000) el.innerText = 'Уличная Дельность';
+      else if (b < 200000) el.innerText = 'Бизнесменность';
+      else if (b < 1000000) el.innerText = 'Миллионерность';
+      else el.innerText = 'Королевность Синдиката 👑';
+    }
+
+    function updateUI() {
+      document.getElementById('balanceDisplay').innerText = fmt(state.balance) + ' ₽';
+      document.getElementById('tpcDisplay').innerText = fmt(state.clickPower * (state.isTurbo ? 5 : 1));
+      document.getElementById('tpsDisplay').innerText = fmt(state.passiveIncome);
+      document.getElementById('betDisplay').innerText = fmt(state.currentBet) + ' ₽';
+      document.getElementById('energyText').innerText = `${Math.floor(state.energy)} / ${state.maxEnergy}`;
+      document.getElementById('energyFill').style.width = `${(state.energy / state.maxEnergy) * 100}%`;
+      document.getElementById('friendsCount').innerText = state.friendsCount;
+      updateStatus();
+      renderShop();
+    }
+
+    // --- ОБРАБОТКА ТАПА (МУЛЬТИТАЧ) ---
+    const clickBtn = document.getElementById('clickBtn');
+
+    clickBtn.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      initAudio();
+
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        if (state.energy >= 1) {
+          state.energy -= 1;
+          state.totalClicks++;
+          const pwr = state.clickPower * (state.isTurbo ? 5 : 1);
+          state.balance += pwr;
+          playSound('click');
+          tg?.HapticFeedback?.impactOccurred('light');
+          spawnFloatingText(e.changedTouches[i].clientX, e.changedTouches[i].clientY, `+${pwr}`);
+        }
+      }
+      updateUI(); save();
+    }, { passive: false });
+
+    clickBtn.addEventListener('click', (e) => {
+      if ('ontouchstart' in window) return;
+      initAudio();
+      if (state.energy >= 1) {
+        state.energy -= 1;
+        state.totalClicks++;
+        const pwr = state.clickPower * (state.isTurbo ? 5 : 1);
+        state.balance += pwr;
+        playSound('click');
+        spawnFloatingText(e.clientX, e.clientY, `+${pwr}`);
+        updateUI(); save();
+      }
+    });
+
+    function spawnFloatingText(x, y, txt) {
+      const el = document.createElement('div');
+      el.className = 'floating-text';
+      el.innerText = txt;
+      el.style.left = `${x - 20}px`;
+      el.style.top = `${y - 30}px`;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 750);
+    }
+
+    // --- БУСТЕР БЕЗУМНОСТИ (х5) ---
+    function activateTurbo() {
+      if (state.isTurbo) return;
+      state.isTurbo = true;
+      state.turboTime = 15;
+      const btn = document.getElementById('turboBtn');
+      btn.disabled = true;
+      playSound('win');
+
+      const timer = setInterval(() => {
+        state.turboTime--;
+        btn.innerText = `🔥 БЕЗУМНОСТЬ (х5): ${state.turboTime}с`;
+        if (state.turboTime <= 0) {
+          clearInterval(timer);
+          state.isTurbo = false;
+          btn.disabled = false;
+          btn.innerText = '🔥 РЕЖИМ БЕЗУМНОСТИ (х5)';
+          updateUI();
+        }
+      }, 1000);
+      updateUI();
+    }
+
+    // --- МАГАЗИН ---
+    function renderShop() {
+      document.getElementById('clickUpgrades').innerHTML = state.clickUpgrades.map((u, i) => `
+        <div class="item-card">
+          <div class="item-icon">${u.icon}</div>
+          <div class="item-info">
+            <div class="item-title">${u.name} (${u.count})</div>
+            <div class="item-desc">${u.desc}</div>
+            <div class="item-stats">+${u.addPower} ₽/таповость</div>
+          </div>
+          <button class="buy-btn" ${state.balance < u.cost ? 'disabled' : ''} onclick="buyClickUpg(${i})">
+            ${fmt(u.cost)} ₽
+          </button>
+        </div>
+      `).join('');
+
+      document.getElementById('businessUpgrades').innerHTML = state.businessUpgrades.map((b, i) => `
+        <div class="item-card">
+          <div class="item-icon">${b.icon}</div>
+          <div class="item-info">
+            <div class="item-title">${b.name} (${b.count})</div>
+            <div class="item-desc">${b.desc}</div>
+            <div class="item-stats">+${b.addIncome} ₽/сек</div>
+          </div>
+          <button class="buy-btn" ${state.balance < b.cost ? 'disabled' : ''} onclick="buyBizUpg(${i})">
+            ${fmt(b.cost)} ₽
+          </button>
+        </div>
+      `).join('');
+    }
+
+    window.buyClickUpg = function(i) {
+      const u = state.clickUpgrades[i];
+      if (state.balance >= u.cost) {
+        state.balance -= u.cost;
+        u.count++;
+        state.clickPower += u.addPower;
+        u.cost = Math.floor(u.cost * 1.6);
+        playSound('buy'); updateUI(); save();
+      }
+    };
+
+    window.buyBizUpg = function(i) {
+      const b = state.businessUpgrades[i];
+      if (state.balance >= b.cost) {
+        state.balance -= b.cost;
+        b.count++;
+        state.passiveIncome += b.addIncome;
+        b.cost = Math.floor(b.cost * 1.5);
+        playSound('buy'); updateUI(); save();
+      }
+    };
+
+    // --- КАЗИНО ---
+    const symbols = ['7️⃣', '💎', '👑', '💵', '🎰', '💣'];
+    let isSpinning = false;
+
+    window.setBet = function(val) { state.currentBet = val; updateUI(); };
+    window.modifyBet = function(m) { state.currentBet = Math.max(10, Math.floor(state.currentBet * m)); updateUI(); };
+    window.setBetAllIn = function() { state.currentBet = Math.max(10, state.balance); updateUI(); };
+
+    window.spinSlots = function() {
+      if (isSpinning) return;
+      if (state.balance < state.currentBet) {
+        document.getElementById('casinoMsg').innerText = '❌ Нет балансности!';
+        document.getElementById('casinoMsg').style.color = '#ff4444';
+        return;
+      }
+
+      isSpinning = true;
+      state.balance -= state.currentBet;
+      updateUI();
+
+      document.getElementById('spinBtn').disabled = true;
+      document.getElementById('casinoMsg').innerText = '🎰 Крутится заносность...';
+      document.getElementById('casinoMsg').style.color = '#ffd700';
+
+      let count = 0;
+      const interval = setInterval(() => {
+        document.getElementById('reel1').innerText = symbols[Math.floor(Math.random() * symbols.length)];
+        document.getElementById('reel2').innerText = symbols[Math.floor(Math.random() * symbols.length)];
+        document.getElementById('reel3').innerText = symbols[Math.floor(Math.random() * symbols.length)];
+        count++;
+        if (count >= 14) {
+          clearInterval(interval);
+          finishSpin();
+        }
+      }, 90);
+    };
+
+    function finishSpin() {
+      isSpinning = false;
+      document.getElementById('spinBtn').disabled = false;
+      const r1 = symbols[Math.floor(Math.random() * symbols.length)];
+      const r2 = symbols[Math.floor(Math.random() * symbols.length)];
+      const r3 = symbols[Math.floor(Math.random() * symbols.length)];
+
+      document.getElementById('reel1').innerText = r1;
+      document.getElementById('reel2').innerText = r2;
+      document.getElementById('reel3').innerText = r3;
+
+      const msg = document.getElementById('casinoMsg');
+
+      if (r1 === r2 && r2 === r3) {
+        const win = state.currentBet * 8;
+        state.balance += win;
+        msg.innerText = `🔥 ЖЕСТКАЯ ЗАНОСНОСТЬ x8! +${fmt(win)} ₽`;
+        msg.style.color = '#00ff88'; playSound('win');
+      } else if (r1 === r2 || r2 === r3 || r1 === r3) {
+        const win = state.currentBet * 2;
+        state.balance += win;
+        msg.innerText = `Малая заносность x2! +${fmt(win)} ₽`;
+        msg.style.color = '#00ff88'; playSound('win');
+      } else {
+        msg.innerText = `Незаносность! -${fmt(state.currentBet)} ₽`;
+        msg.style.color = '#ff4444';
+      }
+      updateUI(); save();
+    }
+
+    // --- БОНУСЫ И ЗАДАНИЯ ---
+    window.claimDaily = function() {
+      const now = Date.now();
+      if (now - state.lastDaily >= 86400000) {
+        state.balance += 25000;
+        state.lastDaily = now;
+        playSound('win');
+        alert('Заносность получена! +25,000 ₽');
+        updateUI(); save();
+      } else {
+        alert('Бонустность доступна раз в 24 часа!');
+      }
+    };
+
+    window.doTask = function(type, reward, btn) {
+      if (type === 'clicks' && state.totalClicks < 500) {
+        alert('Сначала сделай 500 таповостей!');
+        return;
+      }
+      state.balance += reward;
+      btn.innerText = 'ВЫПОЛНЕНО';
+      btn.disabled = true;
+      playSound('win');
+      updateUI(); save();
+    };
+
+    window.shareRef = function() {
+      const link = `https://t.me/share/url?url=https://t.me/YOUR_BOT_NAME?start=ref_${tg?.initDataUnsafe?.user?.id || 123}&text=Заходи в Меллстройность! Начни делать заносность уже сейчас!`;
+      tg?.openTelegramLink(link);
+    };
+
+    // Навигация
+    window.switchMainTab = function(tabId, btn) {
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      btn.classList.add('active');
+    };
+
+    window.switchShopSubTab = function(subId, btn) {
+      document.getElementById('clickUpgrades').style.display = subId === 'clickUpgrades' ? 'block' : 'none';
+      document.getElementById('businessUpgrades').style.display = subId === 'businessUpgrades' ? 'block' : 'none';
+      document.querySelectorAll('.sub-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    };
+
+    // Авто-восполнение энергии и пассивный доход
+    setInterval(() => {
+      if (state.energy < state.maxEnergy) {
+        state.energy = Math.min(state.maxEnergy, state.energy + 3);
+      }
+      if (state.passiveIncome > 0) {
+        state.balance += state.passiveIncome;
+      }
+      updateUI();
+    }, 1000);
+
+    function save() {
+      localStorage.setItem('mell_syndicate_v3', JSON.stringify(state));
+    }
+
+    setInterval(save, 5000);
+    updateUI();
+  </script>
+</body>
+</html>
