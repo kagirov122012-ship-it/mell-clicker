@@ -2,21 +2,24 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Mellstroy Syndicate</title>
-  <!-- Подключаем Telegram Web App SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
+    /* Отключение любых синих рамок, выделения и стандартных эффектов браузера */
     * {
       box-sizing: border-box;
       user-select: none;
       -webkit-user-select: none;
-      touch-action: manipulation;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+      outline: none;
       margin: 0;
       padding: 0;
     }
+
     body {
-      background-color: #0d0d11;
+      background-color: #0b0b10;
       color: #ffffff;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       display: flex;
@@ -24,16 +27,640 @@
       height: 100vh;
       overflow: hidden;
     }
-    /* Шапка с балансом */
+
+    /* Шапка игрока */
     .header {
+      background: linear-gradient(180deg, #161622 0%, #0b0b10 100%);
+      padding: 15px;
       text-align: center;
-      padding: 20px 10px 10px;
-      background: linear-gradient(180deg, #181822 0%, #0d0d11 100%);
+      border-bottom: 1px solid rgba(255, 215, 0, 0.15);
     }
-    .balance-title {
-      font-size: 14px;
-      color: #8a8a9e;
+    .status-badge {
+      display: inline-block;
+      background: rgba(255, 215, 0, 0.1);
+      color: #ffd700;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 1px;
       text-transform: uppercase;
+      margin-bottom: 6px;
+      border: 1px solid rgba(255, 215, 0, 0.3);
+    }
+    .balance {
+      font-size: 38px;
+      font-weight: 900;
+      color: #ffd700;
+      text-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+      letter-spacing: 0.5px;
+    }
+    .stats-row {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      font-size: 12px;
+      color: #8a8a9e;
+      margin-top: 5px;
+    }
+    .stats-row span { color: #00ff88; font-weight: bold; }
+
+    /* Главная навигация */
+    .main-nav {
+      display: flex;
+      background: #14141e;
+      border-bottom: 1px solid #222232;
+    }
+    .nav-btn {
+      flex: 1;
+      padding: 12px 5px;
+      background: none;
+      border: none;
+      color: #71718a;
+      font-weight: 800;
+      font-size: 13px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .nav-btn.active {
+      color: #ffd700;
+      background: rgba(255, 215, 0, 0.08);
+      border-bottom: 3px solid #ffd700;
+    }
+
+    /* Контент вкладок */
+    .tab-content {
+      flex: 1;
+      display: none;
+      padding: 15px;
+      overflow-y: auto;
+    }
+    .tab-content.active { display: block; }
+
+    /* Кликер */
+    .click-area {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100%;
+      position: relative;
+    }
+    .main-click-btn {
+      width: 230px;
+      height: 230px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #2c2c40 0%, #11111a 100%);
+      border: 5px solid #ffd700;
+      box-shadow: 0 0 40px rgba(255, 215, 0, 0.25);
+      font-size: 90px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      transition: transform 0.05s ease;
+      touch-action: manipulation;
+    }
+    .main-click-btn:active { transform: scale(0.93); }
+
+    /* Всплывающие цифры */
+    .floating-text {
+      position: absolute;
+      font-size: 32px;
+      font-weight: 900;
+      color: #ffd700;
+      text-shadow: 0 0 10px rgba(0,0,0,0.8);
+      pointer-events: none;
+      animation: floatAnim 0.75s ease-out forwards;
+      z-index: 100;
+    }
+    @keyframes floatAnim {
+      0% { opacity: 1; transform: translateY(0) scale(1); }
+      100% { opacity: 0; transform: translateY(-90px) scale(1.3); }
+    }
+
+    /* Подвкладки магазина */
+    .sub-nav {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    .sub-btn {
+      flex: 1;
+      padding: 10px;
+      background: #191926;
+      border: 1px solid #28283d;
+      border-radius: 10px;
+      color: #aaa;
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .sub-btn.active {
+      background: #ffd700;
+      color: #000;
+      border-color: #ffd700;
+    }
+
+    /* Карточки товаров */
+    .item-card {
+      background: #151522;
+      border: 1px solid #232336;
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .item-icon {
+      font-size: 36px;
+      background: #1f1f30;
+      width: 55px;
+      height: 55px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .item-info { flex: 1; }
+    .item-title { font-size: 15px; font-weight: bold; color: #fff; }
+    .item-desc { font-size: 11px; color: #8888a0; margin: 3px 0 5px; line-height: 1.3; }
+    .item-stats { font-size: 12px; color: #00ff88; font-weight: bold; }
+    .buy-btn {
+      background: #ffd700;
+      color: #000;
+      border: none;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-weight: 900;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .buy-btn:disabled {
+      background: #252535;
+      color: #555566;
+    }
+
+    /* Слот-машина казино */
+    .slots-container {
+      background: #141420;
+      border: 2px solid #ffd700;
+      border-radius: 20px;
+      padding: 20px 15px;
+      text-align: center;
+      box-shadow: 0 0 30px rgba(255, 215, 0, 0.15);
+    }
+    .reels-box {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin: 20px 0;
+    }
+    .reel {
+      width: 75px;
+      height: 85px;
+      background: #0b0b12;
+      border: 2px solid #2a2a40;
+      border-radius: 12px;
+      font-size: 45px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+    }
+    .bet-controls {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 15px;
+    }
+    .bet-btn {
+      background: #1e1e2d;
+      border: 1px solid #32324a;
+      color: #fff;
+      padding: 8px;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .bet-btn.active { border-color: #ffd700; color: #ffd700; }
+    .spin-btn {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(90deg, #ff0055 0%, #ff5500 100%);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-size: 18px;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 5px 20px rgba(255, 0, 85, 0.4);
+    }
+    .spin-btn:disabled { background: #333; box-shadow: none; color: #777; }
+    .casino-msg {
+      margin-top: 15px;
+      font-weight: bold;
+      font-size: 14px;
+      min-height: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="status-badge" id="userStatus">Новичок</div>
+    <div class="balance" id="balanceDisplay">0 ₽</div>
+    <div class="stats-row">
+      <div>За тап: +<span id="tpcDisplay">1</span> ₽</div>
+      <div>Пассив: +<span id="tpsDisplay">0</span> ₽/сек</div>
+    </div>
+  </div>
+
+  <div class="main-nav">
+    <button class="nav-btn active" onclick="switchMainTab('clickerTab', this)">🎮 ИГРА</button>
+    <button class="nav-btn" onclick="switchMainTab('shopTab', this)">🛍 МАГАЗИН</button>
+    <button class="nav-btn" onclick="switchMainTab('casinoTab', this)">🎰 КАЗИНО</button>
+  </div>
+
+  <div id="clickerTab" class="tab-content active">
+    <div class="click-area">
+      <div class="main-click-btn" id="clickBtn">😎</div>
+    </div>
+  </div>
+
+  <div id="shopTab" class="tab-content">
+    <div class="sub-nav">
+      <button class="sub-btn active" onclick="switchShopSubTab('clickUpgrades', this)">⚡ Тапы</button>
+      <button class="sub-btn" onclick="switchShopSubTab('businessUpgrades', this)">💼 Бизнес</button>
+    </div>
+    <div id="clickUpgrades"></div>
+    <div id="businessUpgrades" style="display:none;"></div>
+  </div>
+
+  <div id="casinoTab" class="tab-content">
+    <div class="slots-container">
+      <h3>🎰 СЛОТ-МАШИНА</h3>
+      <p style="font-size:12px; color:#8a8a9e; margin-top:4px;">Собери 3 одинаковых символа!</p>
+      
+      <div class="reels-box">
+        <div class="reel" id="reel1">🎰</div>
+        <div class="reel" id="reel2">🎰</div>
+        <div class="reel" id="reel3">🎰</div>
+      </div>
+
+      <div style="font-size:12px; color:#aaa; margin-bottom:8px;">Ваша ставка: <b id="betDisplay" style="color:#ffd700">100 ₽</b></div>
+
+      <div class="bet-controls">
+        <button class="bet-btn" onclick="setBet(100)">100 ₽</button>
+        <button class="bet-btn" onclick="setBet(1000)">1,000 ₽</button>
+        <button class="bet-btn" onclick="setBet(10000)">10,000 ₽</button>
+        <button class="bet-btn" onclick="modifyBet(0.5)">/2</button>
+        <button class="bet-btn" onclick="modifyBet(2)">x2</button>
+        <button class="bet-btn" onclick="setBetAllIn()" style="color:#ff0055">ALL IN</button>
+      </div>
+
+      <button class="spin-btn" id="spinBtn" onclick="spinSlots()">КРУТИТЬ!</button>
+      <div class="casino-msg" id="casinoMsg"></div>
+    </div>
+  </div>
+
+  <script>
+    const tg = window.Telegram?.WebApp;
+    if (tg) { tg.expand(); tg.ready(); }
+
+    // --- ВШИТЫЙ ЗВУКОВОЙ СИНТЕЗАТОР (Web Audio API) ---
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+
+    function initAudio() {
+      if (!audioCtx) audioCtx = new AudioContext();
+    }
+
+    function playSound(type) {
+      initAudio();
+      if (!audioCtx) return;
+
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      const now = audioCtx.currentTime;
+
+      if (type === 'click') {
+        osc.frequency.setValueAtTime(400, now);
+        osc.frequency.exponentialRampToValueAtTime(800, now + 0.05);
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+        osc.start(now);
+        osc.stop(now + 0.05);
+      } else if (type === 'buy') {
+        osc.frequency.setValueAtTime(300, now);
+        osc.frequency.setValueAtTime(600, now + 0.08);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+        osc.start(now);
+        osc.stop(now + 0.25);
+      } else if (type === 'spin') {
+        osc.frequency.setValueAtTime(150, now);
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.04);
+        osc.start(now);
+        osc.stop(now + 0.04);
+      } else if (type === 'win') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(440, now);
+        osc.frequency.setValueAtTime(880, now + 0.15);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+        osc.start(now);
+        osc.stop(now + 0.4);
+      } else if (type === 'lose') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(200, now);
+        osc.frequency.linearRampToValueAtTime(80, now + 0.2);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+        osc.start(now);
+        osc.stop(now + 0.2);
+      }
+    }
+
+    // --- СОСТОЯНИЕ ИГРЫ ---
+    let state = {
+      balance: 0,
+      clickPower: 1,
+      passiveIncome: 0,
+      currentBet: 100,
+      clickUpgrades: [
+        { id: 'c1', name: 'Крепкие пальцы', icon: '🤏', cost: 25, addPower: 1, count: 0, desc: '+1 к силе каждого тапа.' },
+        { id: 'c2', name: 'Энергетик', icon: '⚡', cost: 150, addPower: 5, count: 0, desc: 'Заряжает пальцы на супер-скорость.' },
+        { id: 'c3', name: 'Авто-Кликер', icon: '🤖', cost: 800, addPower: 25, count: 0, desc: 'Помогает делать мощные тапы.' },
+        { id: 'c4', name: 'Золотая Мышка', icon: '🖱', cost: 4000, addPower: 100, count: 0, desc: 'Приносит золотые клики.' },
+        { id: 'c5', name: 'Нейросеть-Тапер', icon: '🧠', cost: 20000, addPower: 500, count: 0, desc: 'ИИ кликает за тебя с бешеной силой.' }
+      ],
+      businessUpgrades: [
+        { id: 'b1', name: 'Шаурмичная', icon: '🥙', cost: 50, addIncome: 1, count: 0, desc: 'Первый пассивный бизнес у метро.' },
+        { id: 'b2', name: 'Кофейня', icon: '☕', cost: 300, addIncome: 6, count: 0, desc: 'Продавай кофе хипстерам.' },
+        { id: 'b3', name: 'Стрим-Хаус', icon: '🎙', cost: 1500, addIncome: 30, count: 0, desc: 'Собирай донаты на стримах.' },
+        { id: 'b4', name: 'Казино Клуб', icon: '🎰', cost: 8000, addIncome: 150, count: 0, desc: 'Собственное заведение с рулеткой.' },
+        { id: 'b5', name: 'Крипто-Ферма', icon: '🖥', cost: 40000, addIncome: 800, count: 0, desc: 'Майнинг биткоинов 24/7.' },
+        { id: 'b6', name: 'Медиа-Холдинг', icon: '📺', cost: 200000, addIncome: 4500, count: 0, desc: 'Главный новостной канал страны.' }
+      ]
+    };
+
+    // Загрузка сохранения
+    const saved = localStorage.getItem('mell_syndicate_v2');
+    if (saved) {
+      try { Object.assign(state, JSON.parse(saved)); } catch(e){}
+    }
+
+    // Элементы UI
+    const balanceEl = document.getElementById('balanceDisplay');
+    const tpcEl = document.getElementById('tpcDisplay');
+    const tpsEl = document.getElementById('tpsDisplay');
+    const statusEl = document.getElementById('userStatus');
+    const clickBtn = document.getElementById('clickBtn');
+
+    function fmt(n) { return Math.floor(n).toLocaleString('ru-RU'); }
+
+    function updateStatus() {
+      const b = state.balance;
+      if (b < 1000) statusEl.innerText = 'Новичок';
+      else if (b < 25000) statusEl.innerText = 'Уличный делец';
+      else if (b < 200000) statusEl.innerText = 'Бизнесмен';
+      else if (b < 1000000) statusEl.innerText = 'Миллионер';
+      else statusEl.innerText = 'Король Синдиката 👑';
+    }
+
+    function updateUI() {
+      balanceEl.innerText = fmt(state.balance) + ' ₽';
+      tpcEl.innerText = fmt(state.clickPower);
+      tpsEl.innerText = fmt(state.passiveIncome);
+      document.getElementById('betDisplay').innerText = fmt(state.currentBet) + ' ₽';
+      updateStatus();
+      renderShop();
+    }
+
+    // --- ОБРАБОТКА МУЛЬТИТАЧА ПРИ КЛИКЕ ---
+    clickBtn.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      initAudio();
+
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const touch = e.changedTouches[i];
+        state.balance += state.clickPower;
+        
+        playSound('click');
+        tg?.HapticFeedback?.impactOccurred('light');
+
+        spawnFloatingText(touch.clientX, touch.clientY, `+${state.clickPower}`);
+      }
+
+      updateUI();
+      save();
+    }, { passive: false });
+
+    // Резервный click для ПК
+    clickBtn.addEventListener('click', (e) => {
+      if ('ontouchstart' in window) return; // Чтобы не дублировать на телефонах
+      initAudio();
+      state.balance += state.clickPower;
+      playSound('click');
+      spawnFloatingText(e.clientX, e.clientY, `+${state.clickPower}`);
+      updateUI();
+      save();
+    });
+
+    function spawnFloatingText(x, y, txt) {
+      const el = document.createElement('div');
+      el.className = 'floating-text';
+      el.innerText = txt;
+      el.style.left = `${x - 20}px`;
+      el.style.top = `${y - 30}px`;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 750);
+    }
+
+    // --- МАГАЗИН ---
+    function renderShop() {
+      // Тапы
+      const clickBox = document.getElementById('clickUpgrades');
+      clickBox.innerHTML = state.clickUpgrades.map((u, i) => `
+        <div class="item-card">
+          <div class="item-icon">${u.icon}</div>
+          <div class="item-info">
+            <div class="item-title">${u.name} (${u.count})</div>
+            <div class="item-desc">${u.desc}</div>
+            <div class="item-stats">+${u.addPower} ₽/клики</div>
+          </div>
+          <button class="buy-btn" ${state.balance < u.cost ? 'disabled' : ''} onclick="buyClickUpg(${i})">
+            ${fmt(u.cost)} ₽
+          </button>
+        </div>
+      `).join('');
+
+      // Бизнес
+      const bizBox = document.getElementById('businessUpgrades');
+      bizBox.innerHTML = state.businessUpgrades.map((b, i) => `
+        <div class="item-card">
+          <div class="item-icon">${b.icon}</div>
+          <div class="item-info">
+            <div class="item-title">${b.name} (${b.count})</div>
+            <div class="item-desc">${b.desc}</div>
+            <div class="item-stats">+${b.addIncome} ₽/сек</div>
+          </div>
+          <button class="buy-btn" ${state.balance < b.cost ? 'disabled' : ''} onclick="buyBizUpg(${i})">
+            ${fmt(b.cost)} ₽
+          </button>
+        </div>
+      `).join('');
+    }
+
+    window.buyClickUpg = function(i) {
+      const u = state.clickUpgrades[i];
+      if (state.balance >= u.cost) {
+        state.balance -= u.cost;
+        u.count++;
+        state.clickPower += u.addPower;
+        u.cost = Math.floor(u.cost * 1.6);
+        playSound('buy');
+        tg?.HapticFeedback?.notificationOccurred('success');
+        updateUI(); save();
+      }
+    };
+
+    window.buyBizUpg = function(i) {
+      const b = state.businessUpgrades[i];
+      if (state.balance >= b.cost) {
+        state.balance -= b.cost;
+        b.count++;
+        state.passiveIncome += b.addIncome;
+        b.cost = Math.floor(b.cost * 1.5);
+        playSound('buy');
+        tg?.HapticFeedback?.notificationOccurred('success');
+        updateUI(); save();
+      }
+    };
+
+    // --- КАЗИНО (СЛОТ-МАШИНА) ---
+    const symbols = ['7️⃣', '💎', '👑', '💵', '🎰', '💣'];
+    let isSpinning = false;
+
+    window.setBet = function(val) { state.currentBet = val; updateUI(); };
+    window.modifyBet = function(mult) { state.currentBet = Math.max(10, Math.floor(state.currentBet * mult)); updateUI(); };
+    window.setBetAllIn = function() { state.currentBet = Math.max(10, state.balance); updateUI(); };
+
+    window.spinSlots = function() {
+      if (isSpinning) return;
+      if (state.balance < state.currentBet || state.currentBet <= 0) {
+        document.getElementById('casinoMsg').innerText = '❌ Недостаточно баланса для ставки!';
+        document.getElementById('casinoMsg').style.color = '#ff4444';
+        return;
+      }
+
+      isSpinning = true;
+      state.balance -= state.currentBet;
+      updateUI();
+
+      const spinBtn = document.getElementById('spinBtn');
+      spinBtn.disabled = true;
+      document.getElementById('casinoMsg').innerText = '🎰 Барабаны крутятся...';
+      document.getElementById('casinoMsg').style.color = '#ffd700';
+
+      let counter = 0;
+      const interval = setInterval(() => {
+        document.getElementById('reel1').innerText = symbols[Math.floor(Math.random() * symbols.length)];
+        document.getElementById('reel2').innerText = symbols[Math.floor(Math.random() * symbols.length)];
+        document.getElementById('reel3').innerText = symbols[Math.floor(Math.random() * symbols.length)];
+        playSound('spin');
+        counter++;
+
+        if (counter >= 15) {
+          clearInterval(interval);
+          finishSpin();
+        }
+      }, 90);
+    };
+
+    function finishSpin() {
+      isSpinning = false;
+      document.getElementById('spinBtn').disabled = false;
+
+      const r1 = symbols[Math.floor(Math.random() * symbols.length)];
+      const r2 = symbols[Math.floor(Math.random() * symbols.length)];
+      const r3 = symbols[Math.floor(Math.random() * symbols.length)];
+
+      document.getElementById('reel1').innerText = r1;
+      document.getElementById('reel2').innerText = r2;
+      document.getElementById('reel3').innerText = r3;
+
+      const msg = document.getElementById('casinoMsg');
+
+      if (r1 === r2 && r2 === r3) {
+        // 3 одинаковых
+        let mult = 5;
+        if (r1 === '7️⃣' || r1 === '💎') mult = 10; // Джекпот!
+        
+        const winAmount = state.currentBet * mult;
+        state.balance += winAmount;
+        msg.innerText = `🔥 ДЖЕКПОТ x${mult}! Вы выиграли +${fmt(winAmount)} ₽`;
+        msg.style.color = '#00ff88';
+        playSound('win');
+        tg?.HapticFeedback?.notificationOccurred('success');
+      } else if (r1 === r2 || r2 === r3 || r1 === r3) {
+        // 2 одинаковых
+        const winAmount = state.currentBet * 2;
+        state.balance += winAmount;
+        msg.innerText = `Победа x2! Вы выиграли +${fmt(winAmount)} ₽`;
+        msg.style.color = '#00ff88';
+        playSound('win');
+      } else {
+        // Проигрыш
+        msg.innerText = `Проигрыш! -${fmt(state.currentBet)} ₽`;
+        msg.style.color = '#ff4444';
+        playSound('lose');
+      }
+
+      updateUI();
+      save();
+    }
+
+    // Навигация
+    window.switchMainTab = function(tabId, btn) {
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      btn.classList.add('active');
+    };
+
+    window.switchShopSubTab = function(subId, btn) {
+      document.getElementById('clickUpgrades').style.display = subId === 'clickUpgrades' ? 'block' : 'none';
+      document.getElementById('businessUpgrades').style.display = subId === 'businessUpgrades' ? 'block' : 'none';
+      document.querySelectorAll('.sub-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    };
+
+    // Авто-начисление пассивного дохода
+    setInterval(() => {
+      if (state.passiveIncome > 0) {
+        state.balance += state.passiveIncome;
+        updateUI();
+      }
+    }, 1000);
+
+    function save() {
+      localStorage.setItem('mell_syndicate_v2', JSON.stringify(state));
+    }
+
+    setInterval(save, 5000);
+    updateUI();
+  </script>
+</body>
+</html>
       letter-spacing: 1px;
     }
     .balance {
