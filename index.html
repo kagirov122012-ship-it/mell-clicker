@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mellstroy Syndicate</title>
+    <!-- Официальный SDK Telegram Mini Apps -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Верхний блок с балансом -->
+    <header class="hud">
+        <div class="user-badge" id="user-name">Загрузка...</div>
+        <div class="balance-title">БАЛАНС</div>
+        <div class="balance-value" id="balance">0 ₽</div>
+        <div class="income-rate" id="income-rate">+0 ₽ / сек</div>
+    </header>
+
+    <!-- Игровая зона (Кликер) -->
+    <main class="click-area">
+        <div class="tap-circle" id="tap-btn">
+            <span class="circle-title">MELLSTROY</span>
+            <span class="circle-subtitle">SYNDICATE</span>
+        </div>
+    </main>
+
+    <!-- Нижняя навигация -->
+    <nav class="bottom-nav">
+        <button class="nav-btn active">КЛИКЕР</button>
+        <button class="nav-btn">АКТИВЫ</button>
+        <button class="nav-btn">КАЗИНО</button>
+        <button class="nav-btn">РЕФЕРАЛЫ</button>
+    </nav>
+
+    <!-- Сплит-панель вылетающих цифр при тапе -->
+    <div id="float-container"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>
