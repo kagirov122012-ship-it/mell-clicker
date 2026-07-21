@@ -1,40 +1,384 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mellstroy Syndicate</title>
-    <!-- Официальный SDK Telegram Mini Apps -->
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Mellstroy Syndicate</title>
+  <!-- Подключаем Telegram Web App SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background-color: #0d0d11;
+      color: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+    /* Шапка с балансом */
+    .header {
+      text-align: center;
+      padding: 20px 10px 10px;
+      background: linear-gradient(180deg, #181822 0%, #0d0d11 100%);
+    }
+    .balance-title {
+      font-size: 14px;
+      color: #8a8a9e;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .balance {
+      font-size: 36px;
+      font-weight: 900;
+      color: #ffd700;
+      text-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+      margin: 5px 0;
+    }
+    .passive-income {
+      font-size: 13px;
+      color: #00ff88;
+    }
+
+    /* Навигация (Вкладки) */
+    .nav {
+      display: flex;
+      justify-content: space-around;
+      background: #181822;
+      border-bottom: 1px solid #282838;
+    }
+    .nav-btn {
+      flex: 1;
+      padding: 12px;
+      background: none;
+      border: none;
+      color: #8a8a9e;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .nav-btn.active {
+      color: #ffd700;
+      border-bottom: 2px solid #ffd700;
+      background: rgba(255, 215, 0, 0.05);
+    }
+
+    /* Контент вкладок */
+    .tab-content {
+      flex: 1;
+      display: none;
+      padding: 20px;
+      overflow-y: auto;
+      text-align: center;
+    }
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Кликер */
+    .click-container {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100%;
+    }
+    .main-click-btn {
+      width: 220px;
+      height: 220px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #2a2a3c 0%, #12121a 100%);
+      border: 4px solid #ffd700;
+      box-shadow: 0 0 30px rgba(255, 215, 0, 0.2);
+      font-size: 80px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      transition: transform 0.05s ease;
+    }
+    .main-click-btn:active {
+      transform: scale(0.92);
+    }
+
+    /* Анимация всплывающих цифр +1 */
+    .floating-text {
+      position: absolute;
+      font-size: 28px;
+      font-weight: bold;
+      color: #ffd700;
+      pointer-events: none;
+      animation: floatUp 0.8s ease-out forwards;
+    }
+    @keyframes floatUp {
+      0% { opacity: 1; transform: translateY(0); }
+      100% { opacity: 0; transform: translateY(-80px); }
+    }
+
+    /* Активы и Карточки */
+    .card {
+      background: #181822;
+      border: 1px solid #282838;
+      border-radius: 12px;
+      padding: 15px;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      text-align: left;
+    }
+    .card-info h4 { font-size: 16px; margin-bottom: 4px; }
+    .card-info p { font-size: 12px; color: #8a8a9e; }
+    .buy-btn {
+      background: #ffd700;
+      color: #000;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .buy-btn:disabled {
+      background: #333344;
+      color: #666;
+    }
+
+    /* Казино */
+    .casino-box {
+      background: #181822;
+      padding: 20px;
+      border-radius: 16px;
+      border: 1px solid #282838;
+    }
+    .casino-btn {
+      width: 100%;
+      padding: 14px;
+      margin-top: 10px;
+      background: #00ff88;
+      color: #000;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
 
-    <!-- Верхний блок с балансом -->
-    <header class="hud">
-        <div class="user-badge" id="user-name">Загрузка...</div>
-        <div class="balance-title">БАЛАНС</div>
-        <div class="balance-value" id="balance">0 ₽</div>
-        <div class="income-rate" id="income-rate">+0 ₽ / сек</div>
-    </header>
+  <!-- Верхняя панель -->
+  <div class="header">
+    <div class="balance-title">Ваш Баланс</div>
+    <div class="balance" id="balanceDisplay">0 ₽</div>
+    <div class="passive-income">Пассивный доход: +<span id="ppsDisplay">0</span> ₽/сек</div>
+  </div>
 
-    <!-- Игровая зона (Кликер) -->
-    <main class="click-area">
-        <div class="tap-circle" id="tap-btn">
-            <span class="circle-title">MELLSTROY</span>
-            <span class="circle-subtitle">SYNDICATE</span>
-        </div>
-    </main>
+  <!-- Вкладки -->
+  <div class="nav">
+    <button class="nav-btn active" onclick="switchTab('clickerTab', this)">🎮 ИГРА</button>
+    <button class="nav-btn" onclick="switchTab('assetsTab', this)">📈 АКТИВЫ</button>
+    <button class="nav-btn" onclick="switchTab('casinoTab', this)">🎰 КАЗИНО</button>
+  </div>
 
-    <!-- Нижняя навигация -->
-    <nav class="bottom-nav">
-        <button class="nav-btn active">КЛИКЕР</button>
-        <button class="nav-btn">АКТИВЫ</button>
-        <button class="nav-btn">КАЗИНО</button>
-        <button class="nav-btn">РЕФЕРАЛЫ</button>
-    </nav>
+  <!-- Вкладка 1: Кликер -->
+  <div id="clickerTab" class="tab-content active">
+    <div class="click-container">
+      <div class="main-click-btn" id="clickBtn">😎</div>
+    </div>
+  </div>
 
-    <!-- Сплит-панель вылетающих цифр при тапе -->
+  <!-- Вкладка 2: Активы -->
+  <div id="assetsTab" class="tab-content">
+    <div id="upgradesList"></div>
+  </div>
+
+  <!-- Вкладка 3: Казино -->
+  <div id="casinoTab" class="tab-content">
+    <div class="casino-box">
+      <h3>Монетка (All-In / Риск)</h3>
+      <p style="color: #8a8a9e; margin: 10px 0;">Ставка: 50% от текущего баланса</p>
+      <button class="casino-btn" onclick="playCoinflip()">Бросить монетку (Шанс 50%)</button>
+      <div id="casinoResult" style="margin-top: 15px; font-weight: bold;"></div>
+    </div>
+  </div>
+
+  <script>
+    // Инициализация Telegram WebApp
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      tg.expand();
+      tg.ready();
+    }
+
+    // Состояние игры
+    let gameState = {
+      balance: 0,
+      clickPower: 1,
+      passiveIncome: 0,
+      businesses: [
+        { id: 'b1', name: 'Шаурмичная', cost: 50, income: 1, count: 0 },
+        { id: 'b2', name: 'Кофейня', cost: 250, income: 5, count: 0 },
+        { id: 'b3', name: 'Стрим-Хаус', cost: 1000, income: 25, count: 0 },
+        { id: 'b4', name: 'Казино Клуб', cost: 5000, income: 120, count: 0 }
+      ]
+    };
+
+    // Загрузка сохраненной игры
+    const saved = localStorage.getItem('mell_clicker_save');
+    if (saved) {
+      try { gameState = JSON.parse(saved); } catch(e){}
+    }
+
+    // Элементы UI
+    const balanceEl = document.getElementById('balanceDisplay');
+    const ppsEl = document.getElementById('ppsDisplay');
+    const clickBtn = document.getElementById('clickBtn');
+
+    // Форматирование больших чисел
+    function formatNum(num) {
+      return Math.floor(num).toLocaleString('ru-RU');
+    }
+
+    // Обновление интерфейса
+    function updateUI() {
+      balanceEl.innerText = formatNum(gameState.balance) + ' ₽';
+      ppsEl.innerText = formatNum(gameState.passiveIncome);
+      renderAssets();
+    }
+
+    // Обработка клика
+    clickBtn.addEventListener('click', (e) => {
+      gameState.balance += gameState.clickPower;
+      
+      // Вибрация в Telegram
+      tg?.HapticFeedback?.impactOccurred('light');
+
+      // Создание всплывающего текста
+      showFloatingText(e.clientX, e.clientY, `+${gameState.clickPower}`);
+      
+      updateUI();
+      saveGame();
+    });
+
+    // Анимация +1 при тапе
+    function showFloatingText(x, y, text) {
+      const el = document.createElement('div');
+      el.className = 'floating-text';
+      el.innerText = text;
+      
+      // Позиционирование
+      const rect = clickBtn.getBoundingClientRect();
+      const posX = x || (rect.left + rect.width / 2);
+      const posY = y || (rect.top + rect.height / 2);
+      
+      el.style.left = `${posX - 15}px`;
+      el.style.top = `${posY - 30}px`;
+      
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 800);
+    }
+
+    // Отрисовка бизнесов
+    function renderAssets() {
+      const list = document.getElementById('upgradesList');
+      list.innerHTML = '';
+
+      gameState.businesses.forEach((b, index) => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <div class="card-info">
+            <h4>${b.name} (${b.count})</h4>
+            <p>+${b.income} ₽/сек | Цена: ${formatNum(b.cost)} ₽</p>
+          </div>
+          <button class="buy-btn" ${gameState.balance < b.cost ? 'disabled' : ''} onclick="buyBusiness(${index})">
+            Купить
+          </button>
+        `;
+        list.appendChild(card);
+      });
+    }
+
+    // Покупка бизнеса
+    window.buyBusiness = function(index) {
+      const b = gameState.businesses[index];
+      if (gameState.balance >= b.cost) {
+        gameState.balance -= b.cost;
+        b.count++;
+        gameState.passiveIncome += b.income;
+        b.cost = Math.floor(b.cost * 1.5); // Увеличение цены
+        
+        tg?.HapticFeedback?.notificationOccurred('success');
+        updateUI();
+        saveGame();
+      }
+    };
+
+    // Переключение вкладок
+    window.switchTab = function(tabId, btn) {
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      
+      document.getElementById(tabId).classList.add('active');
+      btn.classList.add('active');
+    };
+
+    // Рулетка в казино
+    window.playCoinflip = function() {
+      const bet = Math.floor(gameState.balance * 0.5);
+      const resultEl = document.getElementById('casinoResult');
+
+      if (bet < 10) {
+        resultEl.innerText = 'Слишком маленький баланс для игры!';
+        resultEl.style.color = '#ff4444';
+        return;
+      }
+
+      const win = Math.random() > 0.5;
+      if (win) {
+        gameState.balance += bet;
+        resultEl.innerText = `Победа! Вы выиграли +${formatNum(bet)} ₽`;
+        resultEl.style.color = '#00ff88';
+        tg?.HapticFeedback?.notificationOccurred('success');
+      } else {
+        gameState.balance -= bet;
+        resultEl.innerText = `Проигрыш! Вы потеряли -${formatNum(bet)} ₽`;
+        resultEl.style.color = '#ff4444';
+        tg?.HapticFeedback?.notificationOccurred('error');
+      }
+
+      updateUI();
+      saveGame();
+    };
+
+    // Таймер пассивного дохода (каждую секунду)
+    setInterval(() => {
+      if (gameState.passiveIncome > 0) {
+        gameState.balance += gameState.passiveIncome;
+        updateUI();
+      }
+    }, 1000);
+
+    // Автосохранение раз в 5 секунд
+    function saveGame() {
+      localStorage.setItem('mell_clicker_save', JSON.stringify(gameState));
+    }
+    setInterval(saveGame, 5000);
+
+    // Первичная инициализация
+    updateUI();
+  </script>
+</body>
+</html>    <!-- Сплит-панель вылетающих цифр при тапе -->
     <div id="float-container"></div>
 
     <script src="script.js"></script>
