@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Mellstroy Syndicate Mini App</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+      outline: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: linear-gradient(-45deg, #070612, #150824, #060f20, #190618);
+      background-size: 400% 400%;
+      animation: neonBg 12s ease infinite;
+      color: #ffffff;
+      font-family: 'Montserrat', sans-serif;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+      position: relative;
+    }
+
+    @keyframes neonBg {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    /* Анимированные частицы фона */
+    .bg-particles {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 0;
+    }
+    .particle {
+      position: absolute;
+      bottom: -40px;
+      font-size: 20px;
+      opacity: 0.35;
+      animation: floatUp 8s linear infinite;
+    }
+    @keyframes floatUp {
+      0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+      20% { opacity: 0.45; }
+      80% { opacity: 0.45; }
+      100% { transform: translateY(-105vh) rotate(360deg); opacity: 0; }
+    }
+
+    /* Верхняя панель */
+    .header {
+      position: relative;
+      z-index: 2;
+      background: rgba(10, 10, 18, 0.85);
+      backdrop-filter: blur(12px);
+      padding: 10px 14px;
+      text-align: center;
+      border-bottom: 1px solid rgba(255, 215, 0, 0.25);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+    }
+    .status-badge {
+      display: inline-block;
+      background: linear-gradient(90deg, rgba(255,215,0,0.2), rgba(255,136,0,0.2));
+      color: #ffd700;
+      padding: 3px 12px;
+      border-radius: 20px;
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 3px;
+      border: 1px solid rgba(255, 215, 0, 0.5);
+      box-shadow: 0 0 10px rgba(255,215,0,0.2);
+    }
+    .balance {
+      font-size: 30px;
+      font-weight: 900;
+      color: #ffd700;
+      text-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+      letter-spacing: 0.5px;
+    }
+    .stats-row {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      font-size: 11px;
+      color: #a0a0c0;
+      margin-top: 2px;
+    }
+    .stats-row span { color: #00ff88; font-weight: 900; }
+
+    /* Главная навигация */
+    .main-nav {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      background: rgba(8, 8, 15, 0.92);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .nav-btn {
+      flex: 1;
+      padding: 12px 2px;
+      background: none;
+      border: none;
+      color: #6a6a88;
+      font-weight: 800;
+      font-size: 11px;
+      cursor: pointer;
+      transition: 0.2s;
+      white-space: nowrap;
+      text-align: center;
+    }
+    .nav-btn.active {
+      color: #ffd700;
+      background: rgba(255, 215, 0, 0.12);
+      border-bottom: 3px solid #ffd700;
+      text-shadow: 0 0 10px rgba(255,215,0,0.5);
+    }
+
+    /* Контент вкладок */
+    .tab-content {
+      position: relative;
+      z-index: 2;
+      flex: 1;
+      display: none;
+      padding: 10px 12px;
+      overflow-y: auto;
+    }
+    .tab-content.active {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* Вкладка Игра */
+    .click-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      padding: 5px 0;
+    }
+
+    /* Кнопка с новым фото */
+    .main-click-btn {
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      border: 4px solid #ffd700;
+      box-shadow: 0 0 45px rgba(255, 215, 0, 0.5), inset 0 0 20px rgba(255, 215, 0, 0.3);
+      position: relative;
+      cursor: pointer;
+      overflow: hidden;
+      transition: transform 0.05s ease;
+      touch-action: manipulation;
+      background: #111;
+    }
+    .main-click-btn img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      pointer-events: none;
+    }
+    .main-click-btn:active { transform: scale(0.92); }
+
+    /* Энергия */
+    .energy-box {
+      width: 100%;
+      max-width: 280px;
+      margin-top: 10px;
+      background: rgba(18, 18, 32, 0.85);
+      backdrop-filter: blur(10px);
+      padding: 8px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 215, 0, 0.2);
+      text-align: center;
+    }
+    .energy-info {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      font-weight: 800;
+      color: #ffaa00;
+      margin-bottom: 4px;
+    }
+    .energy-bar-bg {
+      width: 100%;
+      height: 8px;
+      background: #080810;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid rgba(255,170,0,0.2);
+    }
+    .energy-bar-fill {
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, #ff8800, #ffd700);
+      box-shadow: 0 0 10px #ffd700;
+      transition: width 0.2s ease;
+    }
+
+    /* Кнопка Форсаж */
+    .turbo-btn {
+      margin-top: 8px;
+      background: linear-gradient(90deg, #ff0055, #ff5500);
+      color: #fff;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 20px;
+      font-weight: 900;
+      font-size: 11px;
+      cursor: pointer;
+      box-shadow: 0 0 15px rgba(255, 0, 85, 0.4);
+      letter-spacing: 0.5px;
+    }
+    .turbo-btn:disabled { background: #222232; box-shadow: none; color: #777; cursor: not-allowed; }
+
+    /* Вылетающие цифры */
+    .floating-text {
+      position: absolute;
+      font-size: 26px;
+      font-weight: 900;
+      color: #ffd700;
+      text-shadow: 0 0 10px rgba(0,0,0,0.9), 0 0 6px #ffd700;
+      pointer-events: none;
+      animation: floatAnim 0.7s ease-out forwards;
+      z-index: 100;
+    }
+    @keyframes floatAnim {
+      0% { opacity: 1; transform: translateY(0) scale(1); }
+      100% { opacity: 0; transform: translateY(-75px) scale(1.2); }
+    }
+
+    /* Блоки заполнения пустырей */
+    .widget-box {
+      background: rgba(18, 18, 30, 0.75);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 215, 0, 0.15);
+      border-radius: 14px;
+      padding: 10px 12px;
+    }
+    .widget-title {
+      font-size: 11px;
+      font-weight: 900;
+      color: #ffd700;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      text-align: center;
+    }
+    .stat-card {
+      background: rgba(10, 10, 18, 0.6);
+      border: 1px solid rgba(255,255,255,0.05);
+      padding: 6px;
+      border-radius: 8px;
+    }
+    .stat-val { font-size: 11px; font-weight: 900; color: #fff; }
+    .stat-lbl { font-size: 9px; color: #8a8a9e; margin-top: 2px; }
+
+    /* Магазин */
+    .sub-nav {
+      display: flex;
+      gap: 8px;
+    }
+    .sub-btn {
+      flex: 1;
+      padding: 8px;
+      background: rgba(22, 22, 36, 0.8);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      color: #8a8a9e;
+      font-size: 11px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .sub-btn.active {
+      background: #ffd700;
+      color: #000;
+      border-color: #ffd700;
+      box-shadow: 0 0 10px rgba(255,215,0,0.3);
+    }
+    .shop-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding-right: 2px;
+    }
+    .item-card {
+      background: rgba(18, 18, 30, 0.75);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 8px 10px;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .item-icon {
+      font-size: 24px;
+      background: rgba(30, 30, 48, 0.8);
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      border: 1px solid rgba(255,215,0,0.15);
+    }
+    .item-info { flex: 1; }
+    .item-title { font-size: 11px; font-weight: 900; color: #fff; }
+    .item-desc { font-size: 9px; color: #8888a0; margin: 1px 0; }
+    .item-stats { font-size: 9px; color: #00ff88; font-weight: 800; }
+    .buy-btn {
+      background: #ffd700;
+      color: #000;
+      border: none;
+      padding: 7px 10px;
+      border-radius: 8px;
+      font-weight: 900;
+      font-size: 10px;
+      cursor: pointer;
+    }
+    .buy-btn:disabled { background: #222230; color: #555566; }
+
+    /* Вкладка Казино (Слоты + Кости) */
+    .casino-tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+    .c-tab-btn {
+      flex: 1;
+      padding: 6px;
+      background: rgba(20,20,32,0.8);
+      border: 1px solid rgba(255,255,255,0.08);
+      color: #aaa;
+      border-radius: 8px;
+      font-size: 10px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .c-tab-btn.active { background: #ffd700; color: #000; border-color: #ffd700; }
+
+    .slots-container {
+      background: rgba(16, 16, 26, 0.85);
+      backdrop-filter: blur(10px);
+      border: 2px solid #ffd700;
+      border-radius: 16px;
+      padding: 12px;
+      text-align: center;
+      box-shadow: 0 0 25px rgba(255, 215, 0, 0.15);
+    }
+    .reels-box {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin: 10px 0;
+    }
+    .reel {
+      width: 58px;
+      height: 65px;
+      background: #080810;
+      border: 2px solid #282840;
+      border-radius: 10px;
+      font-size: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: inset 0 0 8px rgba(0,0,0,0.8);
+    }
+    .bet-controls {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 5px;
+      margin-bottom: 10px;
+    }
+    .bet-btn {
+      background: #181828;
+      border: 1px solid #303048;
+      color: #fff;
+      padding: 6px;
+      border-radius: 6px;
+      font-weight: 800;
+      font-size: 9px;
+      cursor: pointer;
+    }
+    .spin-btn {
+      width: 100%;
+      padding: 11px;
+      background: linear-gradient(90deg, #ff0055 0%, #ff5500 100%);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 0 12px rgba(255, 0, 85, 0.3);
+    }
+    .spin-btn:disabled { background: #333; color: #777; box-shadow: none; }
+    .casino-msg { margin-top: 8px; font-weight: 900; font-size: 11px; min-height: 14px; }
+
+    .history-tags {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      margin-top: 8px;
+    }
+    .history-tag {
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 9px;
+      font-weight: 900;
+    }
+    .history-tag.win { background: rgba(0,255,136,0.2); color: #00ff88; border: 1px solid #00ff88; }
+    .history-tag.lose { background: rgba(255,0,85,0.2); color: #ff0055; border: 1px solid #ff0055; }
+
+    /* Ежедневка (7 дней) */
+    .daily-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+    .day-card {
+      background: rgba(15, 15, 25, 0.8);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      padding: 8px 4px;
+      text-align: center;
+    }
+    .day-card.active {
+      border-color: #ffd700;
+      background: rgba(255,215,0,0.15);
+      box-shadow: 0 0 10px rgba(255,215,0,0.2);
+    }
+    .day-card.claimed {
+      opacity: 0.5;
+      border-color: #00ff88;
+    }
+    .day-title { font-size: 9px; color: #aaa; font-weight: 800; }
+    .day-val { font-size: 10px; font-weight: 900; color: #00ff88; margin-top: 2px; }
+
+    /* Модальное окно */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(8px);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-card {
+      background: linear-gradient(145deg, #161626, #0d0d18);
+      border: 2px solid #ffd700;
+      border-radius: 18px;
+      padding: 18px;
+      width: 100%;
+      max-width: 300px;
+      text-align: center;
+      box-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
+      animation: modalPop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes modalPop {
+      0% { transform: scale(0.7); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .modal-icon { font-size: 40px; margin-bottom: 6px; }
+    .modal-title { font-size: 15px; font-weight: 900; color: #ffd700; margin-bottom: 4px; }
+    .modal-text { font-size: 11px; color: #ccc; margin-bottom: 14px; line-height: 1.4; }
+    .modal-close-btn {
+      background: #ffd700;
+      color: #000;
+      border: none;
+      padding: 9px 18px;
+      border-radius: 10px;
+      font-weight: 900;
+      font-size: 11px;
+      cursor: pointer;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="bg-particles" id="bgParticles"></div>
+
+  <div class="header">
+    <div class="status-badge" id="userStatus">Бродяга</div>
+    <div class="balance" id="balanceDisplay">0 ₽</div>
+    <div class="stats-row">
+      <div>Тап: +<span id="tpcDisplay">1</span> ₽</div>
+      <div>Пассив: +<span id="tpsDisplay">0</span> ₽/сек</div>
+    </div>
+  </div>
+
+  <div class="main-nav">
+    <button class="nav-btn active" onclick="switchMainTab('clickerTab', this)">🎮 ИГРА</button>
+    <button class="nav-btn" onclick="switchMainTab('shopTab', this)">🛍 МАГАЗИН</button>
+    <button class="nav-btn" onclick="switchMainTab('casinoTab', this)">🎰 КАЗИНО</button>
+    <button class="nav-btn" onclick="switchMainTab('bonusTab', this)">🎁 ЕЖЕДНЕВКА</button>
+  </div>
+
+  <div id="clickerTab" class="tab-content active">
+    <div class="click-area">
+      <div class="main-click-btn" id="clickBtn">
+        <img src="https://cdn.phototourl.com/free/2026-07-21-dbaf0ca8-73fe-490a-83c0-dbf6768e46f1.jpg" alt="Меллстрой">
+      </div>
+
+      <div class="energy-box">
+        <div class="energy-info">
+          <span>⚡ Энергия:</span>
+          <span id="energyText">1000 / 1000</span>
+        </div>
+        <div class="energy-bar-bg">
+          <div class="energy-bar-fill" id="energyFill"></div>
+        </div>
+      </div>
+
+      <button class="turbo-btn" id="turboBtn" onclick="activateTurbo()">🔥 ФОРСАЖ (x5)</button>
+    </div>
+
+    <div class="widget-box">
+      <div class="widget-title">📊 СТАМИНО-МЕТР СЕССИИ</div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-val" id="statClicks">0</div>
+          <div class="stat-lbl">Кликов</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val" id="statTime">0м 0с</div>
+          <div class="stat-lbl">В игре</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val" id="statEarned">0 ₽</div>
+          <div class="stat-lbl">Заработано</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="shopTab" class="tab-content">
+    <div class="sub-nav">
+      <button class="sub-btn active" onclick="switchShopSubTab('clickUpgrades', this)">⚡ Тапы (12)</button>
+      <button class="sub-btn" onclick="switchShopSubTab('businessUpgrades', this)">💼 Бизнес (12)</button>
+    </div>
+    <div class="shop-scroll">
+      <div id="clickUpgrades"></div>
+      <div id="businessUpgrades" style="display:none;"></div>
+    </div>
+  </div>
+
+  <div id="casinoTab" class="tab-content">
+    <div class="casino-tabs">
+      <button class="c-tab-btn active" onclick="switchCasinoMode('slots', this)">🎰 Слоты 777</button>
+      <button class="c-tab-btn" onclick="switchCasinoMode('dice', this)">🎲 Кости (Больше/Меньше)</button>
+    </div>
+
+    <div id="slotsMode" class="slots-container">
+      <h3 style="color:#ffd700; font-size:14px;">🎰 СЛОТЫ НА ЗАНОС</h3>
+      <p style="font-size:9px; color:#8a8a9e; margin-top:1px;">3 одинаковых символа = x8 джекпот!</p>
+      
+      <div class="reels-box">
+        <div class="reel" id="reel1">🎰</div>
+        <div class="reel" id="reel2">🎰</div>
+        <div class="reel" id="reel3">🎰</div>
+      </div>
+
+      <div style="font-size:10px; color:#aaa; margin-bottom:5px;">Ставка: <b id="betDisplay" style="color:#ffd700">100 ₽</b></div>
+
+      <div class="bet-controls">
+        <button class="bet-btn" onclick="setBet(100)">100 ₽</button>
+        <button class="bet-btn" onclick="setBet(1000)">1,000 ₽</button>
+        <button class="bet-btn" onclick="setBet(10000)">10,000 ₽</button>
+        <button class="bet-btn" onclick="modifyBet(0.5)">/2</button>
+        <button class="bet-btn" onclick="modifyBet(2)">x2</button>
+        <button class="bet-btn" onclick="setBetAllIn()" style="color:#ff0055">ALL IN</button>
+      </div>
+
+      <button class="spin-btn" id="spinBtn" onclick="spinSlots()">КРУТИТЬ НА ЗАНОС!</button>
+      <div class="casino-msg" id="casinoMsg"></div>
+    </div>
+
+    <div id="diceMode" class="slots-container" style="display:none;">
+      <h3 style="color:#ffd700; font-size:14px;">🎲 КОСТИ МЕПЛСТРОЯ</h3>
+      <p style="font-size:9px; color:#8a8a9e; margin-top:1px;">Угадай: выпадет Больше (4-6) или Меньше (1-3)?</p>
+
+      <div style="font-size:45px; margin:10px 0;" id="diceIcon">🎲</div>
+      <div style="font-size:10px; color:#aaa; margin-bottom:5px;">Ставка: <b id="diceBetDisplay" style="color:#ffd700">100 ₽</b></div>
+
+      <div class="bet-controls">
+        <button class="bet-btn" onclick="setBet(100)">100 ₽</button>
+        <button class="bet-btn" onclick="setBet(1000)">1,000 ₽</button>
+        <button class="bet-btn" onclick="modifyBet(2)">x2</button>
+      </div>
+
+      <div style="display:flex; gap:8px;">
+        <button class="spin-btn" style="background:linear-gradient(90deg, #0088cc, #005588);" onclick="playDice('low')">МЕНЬШЕ (1-3)</button>
+        <button class="spin-btn" style="background:linear-gradient(90deg, #00ff88, #00aa55); color:#000;" onclick="playDice('high')">БОЛЬШЕ (4-6)</button>
+      </div>
+      <div class="casino-msg" id="diceMsg"></div>
+    </div>
+
+    <div class="widget-box" style="margin-top:5px;">
+      <div class="widget-title">📜 ПОСЛЕДНИЕ СНИППЕТЫ ЗАНОСОВ</div>
+      <div class="history-tags" id="casinoHistory">
+        <span style="font-size:9px; color:#666;">Пока нет спинов...</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="bonusTab" class="tab-content">
+    <div class="widget-box" style="text-align:center; padding:15px;">
+      <div style="font-size:35px; margin-bottom:4px;">🎁</div>
+      <h3 style="color:#ffd700; font-size:15px; font-weight:900;">7-ДНЕВНЫЙ КАЛЕНДАРЬ</h3>
+      <p style="font-size:10px; color:#aaa; margin:4px 0 12px;">Забирай награду каждый день! Пропустишь — сброс на 1 день.</p>
+
+      <div class="daily-grid" id="dailyGrid"></div>
+
+      <button class="spin-btn" style="background:linear-gradient(90deg, #ffd700, #ff8800); color:#000; margin-top:5px;" id="dailyClaimBtn" onclick="claimDaily()">ЗАБРАТЬ НАГРАДУ ДНЯ</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="customModal">
+    <div class="modal-card">
+      <div class="modal-icon" id="modalIcon">🎁</div>
+      <div class="modal-title" id="modalTitle">Заголовок</div>
+      <div class="modal-text" id="modalText">Текст сообщения...</div>
+      <button class="modal-close-btn" onclick="closeModal()">ПОНЯТНО</button>
+    </div>
+  </div>
+
+  <script>
+    const tg = window.Telegram?.WebApp;
+    if (tg) { tg.expand(); tg.ready(); }
+
+    // --- ГЕНЕРАЦИЯ ФОНОВЫХ ЧАСТИЦ ---
+    const bgContainer = document.getElementById('bgParticles');
+    const particleSymbols = ['💸', '💎', '👑', '$', '🔥', '🎰', '🎲'];
+    for (let i = 0; i < 15; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      p.innerText = particleSymbols[Math.floor(Math.random() * particleSymbols.length)];
+      p.style.left = `${Math.random() * 95}%`;
+      p.style.animationDelay = `${Math.random() * 8}s`;
+      p.style.animationDuration = `${6 + Math.random() * 6}s`;
+      bgContainer.appendChild(p);
+    }
+
+    // --- ЗВУКИ СИНТЕЗАТОРА (ВКЛЮЧАЯ ПРОИГРЫШ) ---
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+    function initAudio() { if (!audioCtx) audioCtx = new AudioContext(); }
+
+    function playSound(type) {
+      initAudio(); if (!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      const now = audioCtx.currentTime;
+
+      if (type === 'click') {
+        osc.frequency.setValueAtTime(400, now);
+        osc.frequency.exponentialRampToValueAtTime(800, now + 0.03);
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.03);
+        osc.start(now); osc.stop(now + 0.03);
+      } else if (type === 'buy') {
+        osc.frequency.setValueAtTime(250, now);
+        osc.frequency.setValueAtTime(600, now + 0.08);
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.18);
+        osc.start(now); osc.stop(now + 0.18);
+      } else if (type === 'win') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(450, now);
+        osc.frequency.setValueAtTime(900, now + 0.12);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+        osc.start(now); osc.stop(now + 0.3);
+      } else if (type === 'lose') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(200, now);
+        osc.frequency.exponentialRampToValueAtTime(65, now + 0.28);
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.28);
+        osc.start(now); osc.stop(now + 0.28);
+      } else if (type === 'spin') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(180, now);
+        osc.frequency.exponentialRampToValueAtTime(350, now + 0.04);
+        gain.gain.setValueAtTime(0.04, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.04);
+        osc.start(now); osc.stop(now + 0.04);
+      }
+    }
+
+    // --- МОДАЛКА ---
+    function showModal(icon, title, text) {
+      document.getElementById('modalIcon').innerText = icon;
+      document.getElementById('modalTitle').innerText = title;
+      document.getElementById('modalText').innerText = text;
+      document.getElementById('customModal').classList.add('active');
+    }
+    function closeModal() { document.getElementById('customModal').classList.remove('active'); }
+
+    // --- 10 ЗВАНИЙ (НЕСГОРАЕМЫЕ ПО МАКС БАЛАНСУ) ---
+    const RANKS = [
+      { name: 'Бродяга', min: 0 },
+      { name: 'Уличный Делец', min: 5000 },
+      { name: 'Шустрый Тёмщик', min: 50000 },
+      { name: 'Бизнесмен', min: 250000 },
+      { name: 'Подпольный Миллионер', min: 1000000 },
+      { name: 'Инвестор', min: 5000000 },
+      { name: 'Крипто-Барон', min: 25000000 },
+      { name: 'Хозяин Казино', min: 100000000 },
+      { name: 'Медиа-Магнат', min: 500000000 },
+      { name: 'Владелец Синдиката 👑', min: 1000000000 }
+    ];
+
+    // --- ЕЖЕДНЕВНЫЙ КАЛЕНДАРЬ ---
+    const DAILY_REWARDS = [2000, 5000, 10000, 18000, 25000, 35000, 50000];
+
+    // --- СОСТОЯНИЕ ИГРЫ ---
+    let state = {
+      balance: 0,
+      maxBalance: 0,
+      clickPower: 1,
+      passiveIncome: 0,
+      energy: 1000,
+      maxEnergy: 1000,
+      currentBet: 100,
+      totalClicks: 0,
+      totalEarned: 0,
+      timePlayedSec: 0,
+      turboActive: false,
+      turboEndTime: 0,
+      turboCooldownEnd: 0,
+      lastDailyClaim: 0,
+      dailyDay: 0, // 0..6
+      casinoHistory: [],
+      clickUpgrades: [
+        { id: 'c1', name: 'Зарядка пальцев', icon: '🤏', cost: 15, addPower: 1, count: 0, desc: '+1 к тапу' },
+        { id: 'c2', name: 'Энергетик с таурином', icon: '⚡', cost: 100, addPower: 3, count: 0, desc: '+3 к тапу' },
+        { id: 'c3', name: 'Массаж суставов', icon: '💆‍♂️', cost: 500, addPower: 10, count: 0, desc: '+10 к тапу' },
+        { id: 'c4', name: 'Сенсорные перчатки', icon: '🧤', cost: 2500, addPower: 35, count: 0, desc: '+35 к тапу' },
+        { id: 'c5', name: 'Игровой автокликер', icon: '🤖', cost: 12000, addPower: 120, count: 0, desc: '+120 к тапу' },
+        { id: 'c6', name: 'Золотая стилус-ручка', icon: '🖊', cost: 50000, addPower: 400, count: 0, desc: '+400 к тапу' },
+        { id: 'c7', name: 'Нейро-интерфейс', icon: '🧠', cost: 200000, addPower: 1200, count: 0, desc: '+1,200 к тапу' },
+        { id: 'c8', name: 'Заносный тапер', icon: '🔥', cost: 800000, addPower: 4000, count: 0, desc: '+4,000 к тапу' },
+        { id: 'c9', name: 'Квантовый клик', icon: '🚀', cost: 3500000, addPower: 15000, count: 0, desc: '+15,000 к тапу' },
+        { id: 'c10', name: 'Движок Меллстроя', icon: '⚡', cost: 15000000, addPower: 55000, count: 0, desc: '+55,000 к тапу' },
+        { id: 'c11', name: 'Алмазная матрица', icon: '💎', cost: 60000000, addPower: 200000, count: 0, desc: '+200,000 к тапу' },
+        { id: 'c12', name: 'Клик Босса Синдиката', icon: '👑', cost: 250000000, addPower: 800000, count: 0, desc: '+800,000 к тапу' }
+      ],
+      businessUpgrades: [
+        { id: 'b1', name: 'Ларёк с шаурмой', icon: '🥙', cost: 40, addIncome: 1, count: 0, desc: '+1 ₽/сек' },
+        { id: 'b2', name: 'Кофейный островок', icon: '☕', cost: 250, addIncome: 4, count: 0, desc: '+4 ₽/сек' },
+        { id: 'b3', name: 'Автомойка', icon: '🚗', cost: 1200, addIncome: 15, count: 0, desc: '+15 ₽/сек' },
+        { id: 'b4', name: 'Стрим-Студия', icon: '🎙', cost: 6000, addIncome: 60, count: 0, desc: '+60 ₽/сек' },
+        { id: 'b5', name: 'Компьютерный клуб', icon: '🖥', cost: 28000, addIncome: 250, count: 0, desc: '+250 ₽/сек' },
+        { id: 'b6', name: 'Крипто-ферма', icon: '⛏', cost: 120000, addIncome: 900, count: 0, desc: '+900 ₽/сек' },
+        { id: 'b7', name: 'Подпольное казино', icon: '🎰', cost: 500000, addIncome: 3200, count: 0, desc: '+3,200 ₽/сек' },
+        { id: 'b8', name: 'Элитный автосалон', icon: '🏎', cost: 2200000, addIncome: 12000, count: 0, desc: '+12,000 ₽/сек' },
+        { id: 'b9', name: 'Сеть бургерных', icon: '🍔', cost: 9000000, addIncome: 45000, count: 0, desc: '+45,000 ₽/сек' },
+        { id: 'b10', name: 'Бизнес-центр в Сити', icon: '🏢', cost: 40000000, addIncome: 180000, count: 0, desc: '+180,000 ₽/сек' },
+        { id: 'b11', name: 'Отель в Дубае', icon: '🏨', cost: 180000000, addIncome: 750000, count: 0, desc: '+750,000 ₽/сек' },
+        { id: 'b12', name: 'Медиа-Холдинг', icon: '🌐', cost: 800000000, addIncome: 3000000, count: 0, desc: '+3,000,000 ₽/сек' }
+      ]
+    };
+
+    const saved = localStorage.getItem('mell_syndicate_v6');
+    if (saved) {
+      try { Object.assign(state, JSON.parse(saved)); } catch(e){}
+    }
+
+    function fmt(n) { return Math.floor(n).toLocaleString('ru-RU'); }
+
+    function updateStatus() {
+      state.maxBalance = Math.max(state.maxBalance || 0, state.balance);
+      let cur = RANKS[0].name;
+      for (let r of RANKS) {
+        if (state.maxBalance >= r.min) cur = r.name;
+      }
+      document.getElementById('userStatus').innerText = cur;
+    }
+
+    function updateUI() {
+      document.getElementById('balanceDisplay').innerText = fmt(state.balance) + ' ₽';
+      document.getElementById('tpcDisplay').innerText = fmt(state.clickPower * (state.turboActive ? 5 : 1));
+      document.getElementById('tpsDisplay').innerText = fmt(state.passiveIncome);
+      document.getElementById('betDisplay').innerText = fmt(state.currentBet) + ' ₽';
+      document.getElementById('diceBetDisplay').innerText = fmt(state.currentBet) + ' ₽';
+      document.getElementById('energyText').innerText = `${Math.floor(state.energy)} / ${state.maxEnergy}`;
+      document.getElementById('energyFill').style.width = `${(state.energy / state.maxEnergy) * 100}%`;
+
+      // Статистика
+      document.getElementById('statClicks').innerText = fmt(state.totalClicks);
+      document.getElementById('statEarned').innerText = fmt(state.totalEarned) + ' ₽';
+      const m = Math.floor(state.timePlayedSec / 60);
+      const s = state.timePlayedSec % 60;
+      document.getElementById('statTime').innerText = `${m}м ${s}с`;
+
+      updateStatus();
+      updateTurboBtn();
+      renderShop();
+      renderDailyCalendar();
+      renderCasinoHistory();
+    }
+
+    // --- КЛИКЕР ---
+    const clickBtn = document.getElementById('clickBtn');
+
+    clickBtn.addEventListener('touchstart', (e) => {
+      e.preventDefault(); initAudio();
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        if (state.energy >= 1) {
+          state.energy -= 1;
+          state.totalClicks++;
+          const pwr = state.clickPower * (state.turboActive ? 5 : 1);
+          state.balance += pwr;
+          state.totalEarned += pwr;
+          playSound('click');
+          tg?.HapticFeedback?.impactOccurred('light');
+          spawnFloatingText(e.changedTouches[i].clientX, e.changedTouches[i].clientY, `+${pwr}`);
+        }
+      }
+      updateUI(); save();
+    }, { passive: false });
+
+    clickBtn.addEventListener('click', (e) => {
+      if ('ontouchstart' in window) return;
+      initAudio();
+      if (state.energy >= 1) {
+        state.energy -= 1;
+        state.totalClicks++;
+        const pwr = state.clickPower * (state.turboActive ? 5 : 1);
+        state.balance += pwr;
+        state.totalEarned += pwr;
+        playSound('click');
+        spawnFloatingText(e.clientX, e.clientY, `+${pwr}`);
+        updateUI(); save();
+      }
+    });
+
+    function spawnFloatingText(x, y, txt) {
+      const el = document.createElement('div');
+      el.className = 'floating-text';
+      el.innerText = txt;
+      el.style.left = `${x - 20}px`;
+      el.style.top = `${y - 25}px`;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 700);
+    }
+
+    // --- ФОРСАЖ С ПЕРЕЗАРЯДКОЙ (90С) ---
+    function activateTurbo() {
+      const now = Date.now();
+      if (state.turboActive || now < state.turboCooldownEnd) return;
+
+      state.turboActive = true;
+      state.turboEndTime = now + 15000; // 15 секунд
+      state.turboCooldownEnd = now + 15000 + 90000; // 15с + 90с КД
+      playSound('win');
+      updateUI();
+    }
+
+    function updateTurboBtn() {
+      const btn = document.getElementById('turboBtn');
+      const now = Date.now();
+
+      if (state.turboActive) {
+        const remActive = Math.ceil((state.turboEndTime - now) / 1000);
+        if (remActive > 0) {
+          btn.disabled = true;
+          btn.innerText = `🔥 ФОРСАЖ (x5): ${remActive}с`;
+        } else {
+          state.turboActive = false;
+        }
+      } else if (now < state.turboCooldownEnd) {
+        const remCd = Math.ceil((state.turboCooldownEnd - now) / 1000);
+        btn.disabled = true;
+        btn.innerText = `⏳ ПЕРЕЗАРЯДКА: ${remCd}с`;
+      } else {
+        btn.disabled = false;
+        btn.innerText = '🔥 РЕЖИМ ФОРСАЖА (x5)';
+      }
+    }
+
+    // --- МАГАЗИН С РЕБАЛАНСОМ МУЛЬТИПЛИКАТОРА (1.85x) ---
+    function renderShop() {
+      document.getElementById('clickUpgrades').innerHTML = state.clickUpgrades.map((u, i) => `
+        <div class="item-card">
+          <div class="item-icon">${u.icon}</div>
+          <div class="item-info">
+            <div class="item-title">${u.name} (${u.count})</div>
+            <div class="item-desc">${u.desc}</div>
+            <div class="item-stats">+${fmt(u.addPower)} ₽/тап</div>
+          </div>
+          <button class="buy-btn" ${state.balance < u.cost ? 'disabled' : ''} onclick="buyClickUpg(${i})">
+            ${fmt(u.cost)} ₽
+          </button>
+        </div>
+      `).join('');
+
+      document.getElementById('businessUpgrades').innerHTML = state.businessUpgrades.map((b, i) => `
+        <div class="item-card">
+          <div class="item-icon">${b.icon}</div>
+          <div class="item-info">
+            <div class="item-title">${b.name} (${b.count})</div>
+            <div class="item-desc">${b.desc}</div>
+            <div class="item-stats">+${fmt(b.addIncome)} ₽/сек</div>
+          </div>
+          <button class="buy-btn" ${state.balance < b.cost ? 'disabled' : ''} onclick="buyBizUpg(${i})">
+            ${fmt(b.cost)} ₽
+          </button>
+        </div>
+      `).join('');
+    }
+
+    window.buyClickUpg = function(i) {
+      const u = state.clickUpgrades[i];
+      if (state.balance >= u.cost) {
+        state.balance -= u.cost;
+        u.count++;
+        state.clickPower += u.addPower;
+        u.cost = Math.floor(u.cost * 1.85); // Ребаланс
+        playSound('buy'); updateUI(); save();
+      }
+    };
+
+    window.buyBizUpg = function(i) {
+      const b = state.businessUpgrades[i];
+      if (state.balance >= b.cost) {
+        state.balance -= b.cost;
+        b.count++;
+        state.passiveIncome += b.addIncome;
+        b.cost = Math.floor(b.cost * 1.85); // Ребаланс
+        playSound('buy'); updateUI(); save();
+      }
+    };
+
+    // --- КАЗИНО ---
+    const symbols = ['7️⃣', '💎', '👑', '💵', '🎰', '💣'];
+    let isSpinning = false;
+
+    window.setBet = function(val) { state.currentBet = val; updateUI(); };
+    window.modifyBet = function(m) { state.currentBet = Math.max(10, Math.floor(state.currentBet * m)); updateUI(); };
+    window.setBetAllIn = function() { state.currentBet = Math.max(10, state.balance); updateUI(); };
+
+    function addCasinoHistory(isWin, text) {
+      state.casinoHistory.unshift({ isWin, text });
+      if (state.casinoHistory.length > 5) state.casinoHistory.pop();
+    }
+
+    function renderCasinoHistory() {
+      const el = document.getElementById('casinoHistory');
+      if (state.casinoHistory.length === 0) {
+        el.innerHTML = `<span style="font-size:9px; color:#666;">Пока нет спинов...</span>`;
+        return;
+      }
+      el.innerHTML = state.casinoHistory.map(h => `
+        <span class="history-tag ${h.isWin ? 'win' : 'lose'}">${h.text}</span>
+      `).join('');
+    }
+
+    window.spinSlots = function() {
+      if (isSpinning) return;
+      if (state.balance < state.currentBet) {
+        document.getElementById('casinoMsg').innerText = '❌ Недостаточно средств!';
+        document.getElementById('casinoMsg').style.color = '#ff4444';
+        return;
+      }
+
+      isSpinning = true;
+      state.balance -= state.currentBet;
+      updateUI();
+
+      document.getElementById('spinBtn').disabled = true;
+      document.getElementById('casinoMsg').innerText = '🎰 Крутим барабаны...';
+      document.getElementById('casinoMsg').style.color = '#ffd700';
+
+      let count = 0;
+      const interval = setInterval(() => {
+        playSound('spin');
+        document.getElementById('reel1').innerText = symbols[Math.floor(Math.random() * symbols.length)];
+        document.getElementById('reel2').innerText = symbols[Math.floor(Math.random() * symbols.length)];
+        document.getElementById('reel3').innerText = symbols[Math.floor(Math.random() * symbols.length)];
+        count++;
+        if (count >= 12) {
+          clearInterval(interval);
+          finishSpin();
+        }
+      }, 80);
+    };
+
+    function finishSpin() {
+      isSpinning = false;
+      document.getElementById('spinBtn').disabled = false;
+      const r1 = symbols[Math.floor(Math.random() * symbols.length)];
+      const r2 = symbols[Math.floor(Math.random() * symbols.length)];
+      const r3 = symbols[Math.floor(Math.random() * symbols.length)];
+
+      document.getElementById('reel1').innerText = r1;
+      document.getElementById('reel2').innerText = r2;
+      document.getElementById('reel3').innerText = r3;
+
+      const msg = document.getElementById('casinoMsg');
+
+      if (r1 === r2 && r2 === r3) {
+        const win = state.currentBet * 8;
+        state.balance += win; state.totalEarned += win;
+        msg.innerText = `🔥 ДЖЕКПОТ x8! +${fmt(win)} ₽`;
+        msg.style.color = '#00ff88'; playSound('win');
+        addCasinoHistory(true, `x8 (+${fmt(win)})`);
+      } else if (r1 === r2 || r2 === r3 || r1 === r3) {
+        const win = state.currentBet * 2;
+        state.balance += win; state.totalEarned += win;
+        msg.innerText = `Занос x2! +${fmt(win)} ₽`;
+        msg.style.color = '#00ff88'; playSound('win');
+        addCasinoHistory(true, `x2 (+${fmt(win)})`);
+      } else {
+        msg.innerText = `Слив! -${fmt(state.currentBet)} ₽`;
+        msg.style.color = '#ff4444'; playSound('lose');
+        addCasinoHistory(false, `-${fmt(state.currentBet)}`);
+      }
+      updateUI(); save();
+    }
+
+    // ИГРА В КОСТИ
+    window.playDice = function(guess) {
+      if (state.balance < state.currentBet) {
+        document.getElementById('diceMsg').innerText = '❌ Недостаточно средств!';
+        document.getElementById('diceMsg').style.color = '#ff4444';
+        return;
+      }
+      state.balance -= state.currentBet;
+      const roll = Math.floor(Math.random() * 6) + 1;
+      const diceEmojis = ['1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣'];
+      document.getElementById('diceIcon').innerText = diceEmojis[roll - 1];
+
+      const isHigh = roll >= 4;
+      const won = (guess === 'high' && isHigh) || (guess === 'low' && !isHigh);
+
+      const msg = document.getElementById('diceMsg');
+      if (won) {
+        const win = state.currentBet * 2;
+        state.balance += win; state.totalEarned += win;
+        msg.innerText = `🎯 Выпало ${roll}! ПОБЕДА +${fmt(win)} ₽`;
+        msg.style.color = '#00ff88'; playSound('win');
+        addCasinoHistory(true, `🎲 x2`);
+      } else {
+        msg.innerText = `💀 Выпало ${roll}! ПРОИГРЫШ -${fmt(state.currentBet)} ₽`;
+        msg.style.color = '#ff4444'; playSound('lose');
+        addCasinoHistory(false, `🎲 Слив`);
+      }
+      updateUI(); save();
+    };
+
+    // --- ЕЖЕДНЕВНЫЙ КАЛЕНДАРЬ ---
+    function renderDailyCalendar() {
+      const grid = document.getElementById('dailyGrid');
+      const now = Date.now();
+      const hours24 = 86400000;
+      const isAvailable = (now - state.lastDailyClaim) >= hours24;
+
+      grid.innerHTML = DAILY_REWARDS.map((val, idx) => {
+        let cls = 'day-card';
+        if (idx < state.dailyDay) cls += ' claimed';
+        else if (idx === state.dailyDay) cls += ' active';
+
+        return `
+          <div class="${cls}">
+            <div class="day-title">ДЕНЬ ${idx + 1}</div>
+            <div class="day-val">+${fmt(val)}</div>
+          </div>
+        `;
+      }).join('');
+
+      const btn = document.getElementById('dailyClaimBtn');
+      if (isAvailable) {
+        btn.disabled = false;
+        btn.innerText = `ЗАБРАТЬ ДЕНЬ ${state.dailyDay + 1} (+${fmt(DAILY_REWARDS[state.dailyDay])} ₽)`;
+      } else {
+        btn.disabled = true;
+        const rem = hours24 - (now - state.lastDailyClaim);
+        const h = Math.floor(rem / 3600000);
+        const m = Math.floor((rem % 3600000) / 60000);
+        btn.innerText = `⏳ СЛЕДУЮЩИЙ ЧЕРЕЗ ${h}ч ${m}м`;
+      }
+    }
+
+    window.claimDaily = function() {
+      const now = Date.now();
+      const hours24 = 86400000;
+      if (now - state.lastDailyClaim < hours24) return;
+
+      // Если прошло больше 48 часов — сброс на 1 день
+      if (now - state.lastDailyClaim > hours24 * 2) {
+        state.dailyDay = 0;
+      }
+
+      const reward = DAILY_REWARDS[state.dailyDay];
+      state.balance += reward;
+      state.totalEarned += reward;
+      state.lastDailyClaim = now;
+
+      showModal('🎉', 'НАГРАДА ЗАБРАНА!', `Ты получил +${fmt(reward)} ₽ за День ${state.dailyDay + 1}!`);
+
+      state.dailyDay = (state.dailyDay + 1) % 7;
+      playSound('win'); updateUI(); save();
+    };
+
+    // НАВИГАЦИЯ
+    window.switchMainTab = function(tabId, btn) {
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      btn.classList.add('active');
+    };
+
+    window.switchShopSubTab = function(subId, btn) {
+      document.getElementById('clickUpgrades').style.display = subId === 'clickUpgrades' ? 'block' : 'none';
+      document.getElementById('businessUpgrades').style.display = subId === 'businessUpgrades' ? 'block' : 'none';
+      document.querySelectorAll('.sub-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    };
+
+    window.switchCasinoMode = function(mode, btn) {
+      document.getElementById('slotsMode').style.display = mode === 'slots' ? 'block' : 'none';
+      document.getElementById('diceMode').style.display = mode === 'dice' ? 'block' : 'none';
+      document.querySelectorAll('.c-tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    };
+
+    // ТАЙМЕР
+    setInterval(() => {
+      // Энергия
+      if (state.energy < state.maxEnergy) {
+        state.energy = Math.min(state.maxEnergy, state.energy + 2);
+      }
+      // Пассивный доход
+      if (state.passiveIncome > 0) {
+        state.balance += state.passiveIncome;
+        state.totalEarned += state.passiveIncome;
+      }
+      state.timePlayedSec++;
+      updateTurboBtn();
+      updateUI();
+    }, 1000);
+
+    function save() {
+      localStorage.setItem('mell_syndicate_v6', JSON.stringify(state));
+    }
+
+    setInterval(save, 5000);
+    updateUI();
+  </script>
+</body>
+</html>
+ 
