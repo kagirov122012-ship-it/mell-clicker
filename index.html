@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mellstroy Clicker VIP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://adsgram.ai/js/adsgram-ad.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800;900&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            font-family: 'Montserrat', sans-serif;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: #0d0915;
+            background-image: radial-gradient(circle at 50% 20%, #1a102f 0%, #0d0915 70%);
+        }
+
+        /* Летающие фоновые иконки */
+        .floating-bg {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 1;
+        }
+        .bg-particle {
+            position: absolute;
+            font-size: 20px;
+            opacity: 0.25;
+            animation: floatParticle 8s infinite linear;
+        }
+        @keyframes floatParticle {
+            0% { transform: translateY(100vh) rotate(0deg); opacity: 0.2; }
+            50% { opacity: 0.4; }
+            100% { transform: translateY(-10vh) rotate(360deg); opacity: 0; }
+        }
+
+        /* Золотой неоновый круг вокруг Мелла */
+        .mell-ring {
+            box-shadow: 0 0 35px #facc15, inset 0 0 15px #facc15;
+            border: 5px solid #facc15;
+        }
+
+        /* Анимация всплывающего числа при тапе */
+        .click-text {
+            position: absolute;
+            pointer-events: none;
+            animation: floatUpAndFade 0.6s ease-out forwards;
+            font-weight: 900;
+            color: #facc15;
+            text-shadow: 0 0 8px rgba(0,0,0,0.9), 0 0 10px #eab308;
+            z-index: 100;
+        }
+        @keyframes floatUpAndFade {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            50% { opacity: 1; transform: translateY(-35px) scale(1.3); }
+            100% { opacity: 0; transform: translateY(-70px) scale(0.9); }
+        }
+
+        /* Стилизация карточек и кнопок */
+        .dark-card {
+            background: rgba(22, 17, 36, 0.85);
+            border: 1px solid rgba(250, 204, 21, 0.15);
+            backdrop-filter: blur(8px);
+        }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #0d0915; }
+        ::-webkit-scrollbar-thumb { background: #3b2a63; border-radius: 4px; }
+    </style>
+</head>
+<body class="text-white select-none overflow-hidden h-screen flex flex-col justify-between relative">
+
+    <div class="floating-bg">
+        <div class="bg-particle" style="left: 10%; animation-delay: 0s;">💵</div>
+        <div class="bg-particle" style="left: 30%; animation-delay: 2s;">💎</div>
+        <div class="bg-particle" style="left: 60%; animation-delay: 4s;">💸</div>
+        <div class="bg-particle" style="left: 80%; animation-delay: 1s;">👑</div>
+        <div class="bg-particle" style="left: 90%; animation-delay: 5s;">💵</div>
+    </div>
+
+    <header class="w-full pt-3 px-4 flex flex-col items-center z-20">
+        <div class="bg-gradient-to-r from-red-600 to-red-700 text-yellow-300 font-black text-[10px] tracking-widest px-3 py-0.5 rounded-md border border-yellow-400 shadow-md uppercase mb-1">
+            Миллионер
+        </div>
+
+        <div class="flex items-center space-x-4 mb-0.5">
+            <div class="flex items-center space-x-1.5">
+                <span id="coin-balance" class="text-2xl font-black text-yellow-400 tracking-tight">0 ₽</span>
+            </div>
+            <div class="flex items-center space-x-1">
+                <i class="fa-solid fa-gem text-cyan-400 text-lg"></i>
+                <span id="diamond-balance" class="text-xl font-bold text-cyan-300">0</span>
+            </div>
+        </div>
+
+        <div class="text-[11px] font-semibold text-gray-300 flex space-x-3">
+            <span>Тап: <strong id="tap-stat" class="text-yellow-400">+1 ₽</strong></span>
+            <span class="text-gray-500">|</span>
+            <span>Пассив: <strong id="passive-stat" class="text-yellow-400">+0 ₽/сек</strong></span>
+        </div>
+
+        <nav class="w-full grid grid-cols-4 gap-1.5 mt-3 bg-[#161124] p-1.5 rounded-xl border border-purple-900/40">
+            <button onclick="switchTab('game')" id="nav-game" class="py-2 rounded-lg font-bold text-xs flex items-center justify-center space-x-1 transition-all bg-yellow-400 text-black shadow-md">
+                <span>🎮</span> <span>ИГРА</span>
+            </button>
+            <button onclick="switchTab('shop')" id="nav-shop" class="py-2 rounded-lg font-bold text-xs flex items-center justify-center space-x-1 transition-all text-gray-300 hover:text-white">
+                <span>🛒</span> <span>МАГАЗИН</span>
+            </button>
+            <button onclick="switchTab('casino')" id="nav-casino" class="py-2 rounded-lg font-bold text-xs flex items-center justify-center space-x-1 transition-all text-gray-300 hover:text-white">
+                <span>🎰</span> <span>КАЗИНО</span>
+            </button>
+            <button onclick="switchTab('rewards')" id="nav-rewards" class="py-2 rounded-lg font-bold text-xs flex items-center justify-center space-x-1 transition-all text-gray-300 hover:text-white">
+                <span>🎁</span> <span>НАГРАДЫ</span>
+            </button>
+        </nav>
+    </header>
+
+    <div id="toast" class="fixed top-24 left-1/2 -translate-x-1/2 bg-yellow-400 text-black px-4 py-2 rounded-xl text-xs font-black shadow-2xl opacity-0 transition-all duration-300 pointer-events-none z-50 border-2 border-white">
+        <span id="toast-message">Уведомление</span>
+    </div>
+
+    <main class="flex-1 overflow-y-auto px-4 py-2 relative z-10 flex flex-col max-w-md mx-auto w-full">
+
+        <section id="tab-game" class="w-full h-full flex flex-col justify-between items-center py-2">
+            
+            <div class="my-auto relative flex items-center justify-center py-4">
+                <button id="main-click-btn" class="relative w-56 h-56 rounded-full mell-ring overflow-hidden active:scale-95 transition-transform duration-75 outline-none">
+                    <img src="https://i.postimg.co/3wX3fN81/mellstroy.png" 
+                         onerror="this.src='https://api.iconify.design/emojione:crown.svg';" 
+                         alt="Mellstroy" 
+                         class="w-full h-full object-cover pointer-events-none">
+                </button>
+            </div>
+
+            <div class="w-full space-y-2 mb-2">
+                <div class="bg-[#18112b] border border-yellow-500/30 rounded-full py-2 px-4 flex justify-center items-center space-x-2 text-xs font-black text-yellow-400 shadow-md">
+                    <span>⚡ Энергия:</span>
+                    <span id="energy-text" class="text-white">1000 / 1000</span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="activateForsage()" class="bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 text-white font-black py-2.5 px-3 rounded-xl text-xs flex items-center justify-center space-x-1 shadow-lg active:scale-95 border border-red-400/40">
+                        <span>🔥</span>
+                        <span>ФОРСАЖ (x5)</span>
+                    </button>
+                    <button onclick="restoreEnergy()" class="bg-gradient-to-r from-emerald-600 to-green-500 hover:from-emerald-500 hover:to-green-400 text-white font-black py-2.5 px-3 rounded-xl text-xs flex items-center justify-center space-x-1 shadow-lg active:scale-95 border border-green-300/40">
+                        <span>⚡</span>
+                        <span>100% ЭНЕРГИЯ</span>
+                    </button>
+                </div>
+
+                <div class="text-center text-[11px] font-bold text-yellow-500/80 tracking-wide">
+                    ● <span id="forsage-status">ФОРСАЖ ГОТОВ</span>
+                </div>
+            </div>
+
+            <div class="w-full dark-card rounded-2xl p-3 border border-purple-800/40">
+                <div class="text-xs font-bold text-gray-300 mb-2 flex items-center">
+                    <span class="mr-1.5">📊</span> СТАТИСТИКА СЕССИИ
+                </div>
+                <div class="grid grid-cols-3 gap-2 text-center">
+                    <div class="bg-[#110d1e] p-2 rounded-xl border border-purple-900/30">
+                        <div id="session-clicks" class="text-sm font-black text-white">0</div>
+                        <div class="text-[10px] text-gray-400 font-medium">Кликов</div>
+                    </div>
+                    <div class="bg-[#110d1e] p-2 rounded-xl border border-purple-900/30">
+                        <div id="session-time" class="text-sm font-black text-white">0м 0с</div>
+                        <div class="text-[10px] text-gray-400 font-medium">В игре</div>
+                    </div>
+                    <div class="bg-[#110d1e] p-2 rounded-xl border border-purple-900/30">
+                        <div id="session-earned" class="text-sm font-black text-yellow-400">0 ₽</div>
+                        <div class="text-[10px] text-gray-400 font-medium">Заработано</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="tab-shop" class="w-full h-full hidden flex-col">
+            <div class="grid grid-cols-3 gap-1 bg-[#161124] p-1 rounded-xl mb-3 border border-purple-900/40 text-xs font-bold text-center">
+                <button onclick="switchShopCat('taps')" id="shop-cat-taps" class="py-2 rounded-lg bg-yellow-400 text-black">⚡ Тапы</button>
+                <button onclick="switchShopCat('biz')" id="shop-cat-biz" class="py-2 rounded-lg text-gray-400 hover:text-white">💼 Бизнес</button>
+                <button onclick="switchShopCat('gems')" id="shop-cat-gems" class="py-2 rounded-lg text-cyan-400 hover:text-cyan-300">👑 Премиум</button>
+            </div>
+
+            <div id="shop-container" class="flex-1 overflow-y-auto space-y-2 pr-1"></div>
+        </section>
+
+        <section id="tab-casino" class="w-full h-full hidden flex-col">
+            <div class="grid grid-cols-3 gap-1 bg-[#161124] p-1 rounded-xl mb-3 border border-purple-900/40 text-xs font-bold text-center">
+                <button onclick="switchCasinoCat('cases')" id="cas-cat-cases" class="py-2 rounded-lg bg-red-600 text-white">🎁 Кейсы</button>
+                <button onclick="switchCasinoCat('slots')" id="cas-cat-slots" class="py-2 rounded-lg text-gray-400 hover:text-white">🎰 Слоты 777</button>
+                <button onclick="switchCasinoCat('dice')" id="cas-cat-dice" class="py-2 rounded-lg text-gray-400 hover:text-white">🎲 Кости</button>
+            </div>
+
+            <div id="casino-container" class="flex-1 overflow-y-auto space-y-3 pr-1">
+                <div id="cas-sec-cases" class="space-y-3">
+                    <div class="text-xs font-bold text-gray-300">КЕЙСЫ СИНДИКАТА</div>
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div class="dark-card p-3 rounded-2xl flex flex-col items-center text-center">
+                            <div class="text-3xl mb-1">📦</div>
+                            <div class="text-xs font-bold text-white mb-1">Кейс «Бомж»</div>
+                            <div class="text-[10px] text-gray-400 mb-2">5,000 ₽</div>
+                            <button onclick="openCase('c1')" class="w-full bg-gradient-to-r from-yellow-500 to-amber-600 text-black font-black text-xs py-1.5 rounded-xl active:scale-95">ОТКРЫТЬ</button>
+                        </div>
+                        <div class="dark-card p-3 rounded-2xl flex flex-col items-center text-center">
+                            <div class="text-3xl mb-1">🎒</div>
+                            <div class="text-xs font-bold text-white mb-1">Кейс «Стример»</div>
+                            <div class="text-[10px] text-gray-400 mb-2">50,000 ₽</div>
+                            <button onclick="openCase('c2')" class="w-full bg-gradient-to-r from-yellow-500 to-amber-600 text-black font-black text-xs py-1.5 rounded-xl active:scale-95">ОТКРЫТЬ</button>
+                        </div>
+                        <div class="dark-card p-3 rounded-2xl flex flex-col items-center text-center">
+                            <div class="text-3xl mb-1">🧰</div>
+                            <div class="text-xs font-bold text-white mb-1">Кейс «Мажор»</div>
+                            <div class="text-[10px] text-cyan-300 mb-2">18 💎</div>
+                            <button onclick="openCase('c3')" class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-black font-black text-xs py-1.5 rounded-xl active:scale-95">ОТКРЫТЬ</button>
+                        </div>
+                        <div class="dark-card p-3 rounded-2xl flex flex-col items-center text-center">
+                            <div class="text-3xl mb-1">👑</div>
+                            <div class="text-xs font-bold text-white mb-1">Кейс «Синдикат»</div>
+                            <div class="text-[10px] text-cyan-300 mb-2">50 💎</div>
+                            <button onclick="openCase('c4')" class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-black font-black text-xs py-1.5 rounded-xl active:scale-95">ОТКРЫТЬ</button>
+                        </div>
+                    </div>
+
+                    <div class="dark-card p-3 rounded-2xl flex items-center justify-between border-2 border-yellow-500/40">
+                        <div>
+                            <div class="text-xs font-black text-yellow-400 flex items-center">
+                                <span class="mr-1">🎁</span> ХАЛЯВНЫЙ КЕЙС «СТРИМЕР»
+                            </div>
+                            <div class="text-[10px] text-gray-400">Посмотри рекламу и открывай бесплатно!</div>
+                        </div>
+                        <button onclick="watchFreeCaseAd()" class="bg-gradient-to-r from-yellow-400 to-amber-500 text-black font-black text-xs py-2 px-3 rounded-xl active:scale-95">
+                            🎬 ЗАБРАТЬ
+                        </button>
+                    </div>
+                </div>
+
+                <div id="cas-sec-slots" class="hidden space-y-3">
+                    <div class="dark-card p-4 rounded-2xl text-center">
+                        <div class="text-xs font-bold text-gray-300 mb-3">СЛОТЫ НА ЗАНОС</div>
+                        <div id="slot-reels" class="flex justify-center space-x-2 text-4xl mb-4 bg-black/60 p-3 rounded-xl border border-purple-800/50">
+                            <span>🎰</span><span>🎰</span><span>🎰</span>
+                        </div>
+                        <div class="flex justify-center space-x-2 mb-3">
+                            <button onclick="setSlotBet(100)" class="bg-purple-950 px-3 py-1 rounded-lg text-xs font-bold border border-purple-700">100 ₽</button>
+                            <button onclick="setSlotBet(1000)" class="bg-purple-950 px-3 py-1 rounded-lg text-xs font-bold border border-purple-700">1,000 ₽</button>
+                            <button onclick="setSlotBet('x2')" class="bg-purple-950 px-3 py-1 rounded-lg text-xs font-bold border border-purple-700">x2</button>
+                        </div>
+                        <div class="text-xs text-yellow-400 mb-3">Ставка: <span id="slot-bet-val">100 ₽</span></div>
+                        <button onclick="spinSlots()" class="w-full bg-gradient-to-r from-red-600 to-orange-600 text-white font-black py-2.5 rounded-xl text-xs active:scale-95">КРУТИТЬ СЛОТЫ</button>
+                    </div>
+                </div>
+
+                <div id="cas-sec-dice" class="hidden space-y-3">
+                    <div class="dark-card p-4 rounded-2xl text-center">
+                        <div class="text-xs font-bold text-gray-300 mb-2">КОСТИ</div>
+                        <div class="text-5xl mb-3">🎲</div>
+                        <div class="flex justify-center space-x-2 mb-3">
+                            <button onclick="setDiceBet(100)" class="bg-purple-950 px-3 py-1 rounded-lg text-xs font-bold border border-purple-700">100 ₽</button>
+                            <button onclick="setDiceBet(1000)" class="bg-purple-950 px-3 py-1 rounded-lg text-xs font-bold border border-purple-700">1,000 ₽</button>
+                            <button onclick="setDiceBet('x2')" class="bg-purple-950 px-3 py-1 rounded-lg text-xs font-bold border border-purple-700">x2</button>
+                        </div>
+                        <div class="text-xs text-yellow-400 mb-3">Ставка: <span id="dice-bet-val">100 ₽</span></div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="playDice('low')" class="bg-emerald-600 text-white font-black py-2.5 rounded-xl text-xs active:scale-95">1-3</button>
+                            <button onclick="playDice('high')" class="bg-emerald-600 text-white font-black py-2.5 rounded-xl text-xs active:scale-95">4-6</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="tab-rewards" class="w-full h-full hidden flex-col space-y-3 overflow-y-auto pr-1">
+            <div class="dark-card p-3 rounded-2xl border border-yellow-500/30">
+                <div class="text-xs font-bold text-yellow-400 mb-2 flex items-center">
+                    <span class="mr-1">📅</span> ЕЖЕДНЕВНЫЙ КАЛЕНДАРЬ
+                </div>
+                <div class="grid grid-cols-4 gap-1.5 text-center mb-2" id="daily-grid">
+                    </div>
+                <button onclick="claimDaily()" id="daily-claim-btn" class="w-full bg-gradient-to-r from-yellow-400 to-amber-500 text-black font-black py-2 rounded-xl text-xs active:scale-95">
+                    ЗАБРАТЬ НАГРАДУ
+                </button>
+            </div>
+
+            <div class="dark-card p-3 rounded-2xl flex items-center justify-between border border-cyan-500/30">
+                <div>
+                    <div class="text-xs font-bold text-cyan-300">🚀 СПОНСОРСКИЙ ЗАНОС</div>
+                    <div class="text-[10px] text-gray-400">Получи +50,000 ₽ и 3 💎 за просмотр</div>
+                </div>
+                <button onclick="watchSponsorAd()" class="bg-gradient-to-r from-cyan-500 to-blue-600 text-black font-black text-xs py-2 px-3 rounded-xl active:scale-95">
+                    СМОТРЕТЬ
+                </button>
+            </div>
+
+            <div class="dark-card p-3 rounded-2xl">
+                <div class="text-xs font-bold text-gray-300 mb-2">🏆 ДОСТИЖЕНИЯ СИНДИКАТА</div>
+                <div id="achievements-list" class="space-y-2"></div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // Инициализация Adsgram
+        const ADSGRAM_BLOCK_ID = "YOUR_BLOCK_ID_HERE";
+        let AdController = window.Adsgram ? window.Adsgram.init({ blockId: ADSGRAM_BLOCK_ID }) : null;
+
+        // Состояние игры
+        let gameState = {
+            coins: 0,
+            diamonds: 5,
+            clickPower: 1,
+            pps: 0,
+            energy: 1000,
+            maxEnergy: 1000,
+            sessionClicks: 0,
+            sessionTimeSeconds: 0,
+            sessionEarned: 0,
+            inventory: { taps: {}, biz: {}, gems: {} },
+            claimedDailyDay: 0,
+            claimedAchievements: []
+        };
+
+        // ТАПЫ (15 ПРЕДМЕТОВ)
+        const shopTaps = [
+            { id: "t1", name: "Зарядка пальцев", cost: 20, power: 1, icon: "👆" },
+            { id: "t2", name: "Энергетик с таурином", cost: 150, power: 4, icon: "⚡" },
+            { id: "t3", name: "Массаж суставов", cost: 800, power: 18, icon: "🐱" },
+            { id: "t4", name: "Сенсорные перчатки", cost: 4000, power: 50, icon: "🧤" },
+            { id: "t5", name: "Игровой автокликер", cost: 20000, power: 200, icon: "🤖" },
+            { id: "t6", name: "Титановый перст", cost: 85000, power: 650, icon: "🦾" },
+            { id: "t7", name: "Золотой Мультитап", cost: 300000, power: 2100, icon: "💍" },
+            { id: "t8", name: "Алмазный Тап", cost: 1200000, power: 7500, icon: "💎" },
+            { id: "t9", name: "Кибер-Скрипт", cost: 4500000, power: 24000, icon: "💻" },
+            { id: "t10", name: "Аура Заноса", cost: 18000000, power: 85000, icon: "🌟" },
+            { id: "t11", name: "Платиновый Удар", cost: 65000000, power: 280000, icon: "🔱" },
+            { id: "t12", name: "Квантовый Тап", cost: 220000000, power: 950000, icon: "⚛️" },
+            { id: "t13", name: "Власть Меллстроя", cost: 850000000, power: 3400000, icon: "👑" },
+            { id: "t14", name: "Золотой Занос x100", cost: 3000000000, power: 12000000, icon: "💰" },
+            { id: "t15", name: "Перчатка Борова", cost: 10000000000, power: 45000000, icon: "🥊" }
+        ];
+
+        // БИЗНЕС (15 ПРЕДМЕТОВ)
+        const shopBiz = [
+            { id: "b1", name: "Шаурма у Мелла", cost: 500, pps: 5, icon: "🥙" },
+            { id: "b2", name: "Кофейный Автомат", cost: 2500, pps: 25, icon: "☕" },
+            { id: "b3", name: "Компьютерный Клуб", cost: 12000, pps: 110, icon: "🖥️" },
+            { id: "b4", name: "Золотая Автомойка", cost: 50000, pps: 420, icon: "🚗" },
+            { id: "b5", name: "VIP Ночной Клуб", cost: 200000, pps: 1500, icon: "🍸" },
+            { id: "b6", name: "Стриминговая Студия", cost: 850000, pps: 5800, icon: "🎙️" },
+            { id: "b7", name: "Сеть Ресторанов", cost: 3500000, pps: 22000, icon: "🍔" },
+            { id: "b8", name: "Завод Геленвагенов", cost: 14000000, pps: 85000, icon: "🏎️" },
+            { id: "b9", name: "Золотой Банк", cost: 55000000, pps: 320000, icon: "🏦" },
+            { id: "b10", name: "Нефтяная Вышка", cost: 220000000, pps: 1250000, icon: "🛢️" },
+            { id: "b11", name: "Сеть Онлайн Казино", cost: 850000000, pps: 4800000, icon: "🎰" },
+            { id: "b12", name: "Частный Космодром", cost: 3200000000, pps: 17500000, icon: "🚀" },
+            { id: "b13", name: "Дубайская Корпорация", cost: 12000000000, pps: 65000000, icon: "🏙️" },
+            { id: "b14", name: "Остров Меллстроя", cost: 45000000000, pps: 240000000, icon: "🏝️" },
+            { id: "b15", name: "Мировая Империя", cost: 180000000000, pps: 950000000, icon: "🌍" }
+        ];
+
+        // ПРЕМИУМ (15 ПРЕДМЕТОВ ЗА 💎)
+        const shopGems = [
+            { id: "g1", name: "VIP Множитель x2", costGems: 50, desc: "Удваивает весь клик навсегда", icon: "👑" },
+            { id: "g2", name: "Власть Синдиката x5", costGems: 200, desc: "Упаковывает клик x5 навсегда", icon: "💎" },
+            { id: "g3", name: "Старт Олигарха", costGems: 10, rewardCoins: 25000, icon: "💵" },
+            { id: "g4", name: "Заряд Энергии", costGems: 15, fillEnergy: true, icon: "⚡" },
+            { id: "g5", name: "Буст Клика (+250)", costGems: 30, power: 250, icon: "🔥" },
+            { id: "g6", name: "Мешок Кеша", costGems: 45, rewardCoins: 150000, icon: "💰" },
+            { id: "g7", name: "Кристальный Пассив", costGems: 70, pps: 3500, icon: "📈" },
+            { id: "g8", name: "Донат от Мелла", costGems: 100, rewardCoins: 800000, icon: "🎁" },
+            { id: "g9", name: "Мега Тап (+1,500)", costGems: 160, power: 1500, icon: "⚡" },
+            { id: "g10", name: "Чемодан Кеша", costGems: 250, rewardCoins: 3500000, icon: "🧰" },
+            { id: "g11", name: "Гипер Тап (+6,000)", costGems: 400, power: 6000, icon: "🚀" },
+            { id: "g12", name: "Фарм Бабла", costGems: 600, rewardCoins: 12000000, icon: "💎" },
+            { id: "g13", name: "Бесконечный Пассив", costGems: 850, pps: 45000, icon: "🤖" },
+            { id: "g14", name: "Капитал Короля", costGems: 1200, rewardCoins: 50000000, icon: "👑" },
+            { id: "g15", name: "Бог Клика (+50,000)", costGems: 2000, power: 50000, icon: "🔱" }
+        ];
+
+        // ДОСТИЖЕНИЯ
+        const achievementsList = [
+            { id: "a1", title: "Первые шаги", desc: "Сделай 50 кликов", req: 50, rewardGems: 5 },
+            { id: "a2", title: "Капиталист", desc: "Заработай 10,000 ₽", reqMoney: 10000, rewardGems: 10 },
+            { id: "a3", title: "Кликер-Машина", desc: "Сделай 1,000 кликов", req: 1000, rewardGems: 20 }
+        ];
+
+        let currentShopCat = 'taps';
+        let slotBet = 100;
+        let diceBet = 100;
+        let forsageActive = false;
+
+        // Переключение главных вкладок
+        function switchTab(tabId) {
+            ['game', 'shop', 'casino', 'rewards'].forEach(t => {
+                document.getElementById(`tab-${t}`).classList.add('hidden');
+                document.getElementById(`nav-${t}`).className = "py-2 rounded-lg font-bold text-xs flex items-center justify-center space-x-1 transition-all text-gray-300 hover:text-white";
+            });
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            document.getElementById(`nav-${tabId}`).className = "py-2 rounded-lg font-bold text-xs flex items-center justify-center space-x-1 transition-all bg-yellow-400 text-black shadow-md";
+        }
+
+        // Переключение подвкладок магазина
+        function switchShopCat(cat) {
+            currentShopCat = cat;
+            ['taps', 'biz', 'gems'].forEach(c => {
+                const btn = document.getElementById(`shop-cat-${c}`);
+                btn.className = "py-2 rounded-lg text-gray-400 hover:text-white";
+            });
+            document.getElementById(`shop-cat-${cat}`).className = cat === 'gems' ? "py-2 rounded-lg bg-cyan-400 text-black font-bold" : "py-2 rounded-lg bg-yellow-400 text-black font-bold";
+            renderShop();
+        }
+
+        // Переключение подвкладок казино
+        function switchCasinoCat(cat) {
+            ['cases', 'slots', 'dice'].forEach(c => {
+                document.getElementById(`cas-sec-${c}`).classList.add('hidden');
+                document.getElementById(`cas-cat-${c}`).className = "py-2 rounded-lg text-gray-400 hover:text-white";
+            });
+            document.getElementById(`cas-sec-${cat}`).classList.remove('hidden');
+            document.getElementById(`cas-cat-${cat}`).className = "py-2 rounded-lg bg-red-600 text-white font-bold";
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-message').innerText = msg;
+            toast.classList.remove('opacity-0');
+            toast.classList.add('opacity-100');
+            setTimeout(() => {
+                toast.classList.remove('opacity-100');
+                toast.classList.add('opacity-0');
+            }, 2000);
+        }
+
+        // КЛИК ПО МЕЛЛСТРОЮ
+        const clickBtn = document.getElementById('main-click-btn');
+        clickBtn.addEventListener('click', (e) => {
+            if (gameState.energy <= 0) {
+                showToast("Энергия на нуле!");
+                return;
+            }
+
+            let earned = gameState.clickPower * (forsageActive ? 5 : 1);
+            gameState.coins += earned;
+            gameState.energy--;
+            gameState.sessionClicks++;
+            gameState.sessionEarned += earned;
+
+            // Вылет цифры
+            const rect = clickBtn.getBoundingClientRect();
+            const text = document.createElement('div');
+            text.className = 'click-text text-xl';
+            text.innerText = `+${earned} ₽`;
+            
+            const x = (e.clientX || rect.left + rect.width / 2) + (Math.random() * 30 - 15);
+            const y = (e.clientY || rect.top + rect.height / 2) - 10;
+            
+            text.style.left = `${x}px`;
+            text.style.top = `${y}px`;
+            document.body.appendChild(text);
+
+            setTimeout(() => text.remove(), 600);
+
+            updateUI();
+        });
+
+        // Бусты
+        function activateForsage() {
+            if (forsageActive) return;
+            forsageActive = true;
+            document.getElementById('forsage-status').innerText = "ФОРСАЖ АКТИВЕН (x5)!";
+            document.getElementById('forsage-status').className = "text-red-500 font-bold animate-pulse";
+            showToast("ФОРСАЖ x5 ВКТЮЧЕН НА 10 СЕК!");
+            setTimeout(() => {
+                forsageActive = false;
+                document.getElementById('forsage-status').innerText = "ФОРСАЖ ГОТОВ";
+                document.getElementById('forsage-status').className = "";
+            }, 10000);
+        }
+
+        function restoreEnergy() {
+            gameState.energy = gameState.maxEnergy;
+            showToast("Энергия восполнена!");
+            updateUI();
+        }
+
+        // Отрисовка магазина
+        function renderShop() {
+            const container = document.getElementById('shop-container');
+            container.innerHTML = "";
+
+            let list = currentShopCat === 'taps' ? shopTaps : (currentShopCat === 'biz' ? shopBiz : shopGems);
+
+            list.forEach(item => {
+                const count = gameState.inventory[currentShopCat][item.id] || 0;
+                let cost = item.cost ? Math.floor(item.cost * Math.pow(1.15, count)) : item.costGems;
+                
+                const div = document.createElement('div');
+                div.className = "dark-card rounded-2xl p-3 flex justify-between items-center";
+
+                let subText = "";
+                if (item.power) subText = `+${item.power} ₽/тап`;
+                if (item.pps) subText = `+${item.pps} ₽/сек`;
+                if (item.desc) subText = item.desc;
+                if (item.rewardCoins) subText = `+${item.rewardCoins.toLocaleString()} ₽`;
+
+                const priceTag = item.cost ? `${cost.toLocaleString()} ₽` : `${cost} 💎`;
+                const btnColor = currentShopCat === 'gems' ? "bg-gradient-to-r from-cyan-400 to-blue-500 text-black" : "bg-yellow-400 text-black";
+
+                div.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-xl bg-purple-950 border border-purple-700/50 flex items-center justify-center text-xl">
+                            ${item.icon}
+                        </div>
+                        <div>
+                            <div class="text-xs font-bold text-white">${item.name} <span class="text-[10px] text-yellow-400">(${count})</span></div>
+                            <div class="text-[10px] text-gray-400">${subText}</div>
+                        </div>
+                    </div>
+                    <button onclick="buyShopItem('${currentShopCat}', '${item.id}')" class="${btnColor} font-black text-xs py-1.5 px-3 rounded-xl active:scale-95">
+                        ${priceTag}
+                    </button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function buyShopItem(cat, id) {
+            let list = cat === 'taps' ? shopTaps : (cat === 'biz' ? shopBiz : shopGems);
+            const item = list.find(i => i.id === id);
+            const count = gameState.inventory[cat][id] || 0;
+
+            if (cat === 'gems') {
+                if (gameState.diamonds < item.costGems) {
+                    showToast("Недостаточно алмазов!");
+                    return;
+                }
+                gameState.diamonds -= item.costGems;
+                if (item.power) gameState.clickPower += item.power;
+                if (item.pps) gameState.pps += item.pps;
+                if (item.rewardCoins) gameState.coins += item.rewardCoins;
+                if (item.fillEnergy) gameState.energy = gameState.maxEnergy;
+                if (id === 'g1') gameState.clickPower *= 2;
+                if (id === 'g2') gameState.clickPower *= 5;
+            } else {
+                let cost = Math.floor(item.cost * Math.pow(1.15, count));
+                if (gameState.coins < cost) {
+                    showToast("Недостаточно денег!");
+                    return;
+                }
+                gameState.coins -= cost;
+                if (item.power) gameState.clickPower += item.power;
+                if (item.pps) gameState.pps += item.pps;
+            }
+
+            gameState.inventory[cat][id] = count + 1;
+            showToast(`Куплено: ${item.name}`);
+            renderShop();
+            updateUI();
+        }
+
+        // КАЗИНО - КЕЙСЫ
+        function openCase(type) {
+            let costCoins = 0, costGems = 0, minWin = 0, maxWin = 0;
+            if (type === 'c1') { costCoins = 5000; minWin = 2000; maxWin = 25000; }
+            if (type === 'c2') { costCoins = 50000; minWin = 20000; maxWin = 250000; }
+            if (type === 'c3') { costGems = 18; minWin = 100000; maxWin = 1000000; }
+            if (type === 'c4') { costGems = 50; minWin = 500000; maxWin = 5000000; }
+
+            if (costCoins > 0 && gameState.coins < costCoins) { showToast("Мало денег!"); return; }
+            if (costGems > 0 && gameState.diamonds < costGems) { showToast("Мало алмазов!"); return; }
+
+            gameState.coins -= costCoins;
+            gameState.diamonds -= costGems;
+
+            const win = Math.floor(Math.random() * (maxWin - minWin + 1)) + minWin;
+            gameState.coins += win;
+            showToast(`ВЫИГРЫШ ИЗ КЕЙСА: +${win.toLocaleString()} ₽!`);
+            updateUI();
+        }
+
+        function watchFreeCaseAd() {
+            const win = 35000;
+            gameState.coins += win;
+            showToast(`Халява получена: +${win.toLocaleString()} ₽!`);
+            updateUI();
+        }
+
+        // КАЗИНО - СЛОТЫ
+        function setSlotBet(val) {
+            if (val === 'x2') slotBet *= 2;
+            else slotBet = val;
+            document.getElementById('slot-bet-val').innerText = `${slotBet.toLocaleString()} ₽`;
+        }
+
+        function spinSlots() {
+            if (gameState.coins < slotBet) { showToast("Мало денег для ставки!"); return; }
+            gameState.coins -= slotBet;
+
+            const symbols = ['7️⃣', '🍋', '🍒', '👑', '💎'];
+            const s1 = symbols[Math.floor(Math.random() * symbols.length)];
+            const s2 = symbols[Math.floor(Math.random() * symbols.length)];
+            const s3 = symbols[Math.floor(Math.random() * symbols.length)];
+
+            document.getElementById('slot-reels').innerHTML = `<span>${s1}</span><span>${s2}</span><span>${s3}</span>`;
+
+            if (s1 === s2 && s2 === s3) {
+                const win = slotBet * 10;
+                gameState.coins += win;
+                showToast(`ДЖЕКПОТ! +${win.toLocaleString()} ₽!`);
+            } else if (s1 === s2 || s2 === s3 || s1 === s3) {
+                const win = Math.floor(slotBet * 2);
+                gameState.coins += win;
+                showToast(`Занос! +${win.toLocaleString()} ₽!`);
+            } else {
+                showToast("Не повезло!");
+            }
+            updateUI();
+        }
+
+        // КАЗИНО - КОСТИ
+        function setDiceBet(val) {
+            if (val === 'x2') diceBet *= 2;
+            else diceBet = val;
+            document.getElementById('dice-bet-val').innerText = `${diceBet.toLocaleString()} ₽`;
+        }
+
+        function playDice(choice) {
+            if (gameState.coins < diceBet) { showToast("Мало денег!"); return; }
+            gameState.coins -= diceBet;
+
+            const roll = Math.floor(Math.random() * 6) + 1;
+            const win = (choice === 'low' && roll <= 3) || (choice === 'high' && roll >= 4);
+
+            if (win) {
+                const prize = Math.floor(diceBet * 1.95);
+                gameState.coins += prize;
+                showToast(`Выпало ${roll}! Победа +${prize.toLocaleString()} ₽!`);
+            } else {
+                showToast(`Выпало ${roll}! Проигрыш!`);
+            }
+            updateUI();
+        }
+
+        // НАГРАДЫ - КАЛЕНДАРЬ
+        function renderDailyGrid() {
+            const grid = document.getElementById('daily-grid');
+            grid.innerHTML = "";
+            for (let i = 1; i <= 7; i++) {
+                const div = document.createElement('div');
+                div.className = "bg-[#110d1e] p-2 rounded-xl border border-purple-900/30 text-[10px]";
+                div.innerHTML = `
+                    <div class="text-gray-400">ДЕНЬ ${i}</div>
+                    <div class="font-black text-yellow-400">+${i * 1000} ₽</div>
+                `;
+                grid.appendChild(div);
+            }
+        }
+
+        function claimDaily() {
+            gameState.coins += 5000;
+            gameState.diamonds += 2;
+            showToast("Ежедневная награда забрана: +5,000 ₽ и +2 💎!");
+            updateUI();
+        }
+
+        function watchSponsorAd() {
+            gameState.coins += 50000;
+            gameState.diamonds += 3;
+            showToast("Спонсорский бонус: +50,000 ₽ и +3 💎!");
+            updateUI();
+        }
+
+        // РЕНДЕР ДОСТИЖЕНИЙ
+        function renderAchievements() {
+            const container = document.getElementById('achievements-list');
+            container.innerHTML = "";
+
+            achievementsList.forEach(a => {
+                const isClaimed = gameState.claimedAchievements.includes(a.id);
+                const div = document.createElement('div');
+                div.className = "bg-[#110d1e] p-2.5 rounded-xl flex justify-between items-center border border-purple-900/30";
+                
+                div.innerHTML = `
+                    <div>
+                        <div class="text-xs font-bold text-white">${a.title}</div>
+                        <div class="text-[10px] text-gray-400">${a.desc}</div>
+                    </div>
+                    <button onclick="claimAchievement('${a.id}')" ${isClaimed ? 'disabled' : ''} class="${isClaimed ? 'bg-gray-700 text-gray-400' : 'bg-cyan-400 text-black'} font-black text-[10px] py-1 px-2.5 rounded-lg">
+                        ${isClaimed ? 'ЗАБРАНО' : `+${a.rewardGems} 💎`}
+                    </button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function claimAchievement(id) {
+            const a = achievementsList.find(item => item.id === id);
+            gameState.diamonds += a.rewardGems;
+            gameState.claimedAchievements.push(id);
+            showToast(`Достижение получено: +${a.rewardGems} 💎!`);
+            renderAchievements();
+            updateUI();
+        }
+
+        // ОБНОВЛЕНИЕ UI
+        function updateUI() {
+            document.getElementById('coin-balance').innerText = `${Math.floor(gameState.coins).toLocaleString()} ₽`;
+            document.getElementById('diamond-balance').innerText = Math.floor(gameState.diamonds).toLocaleString();
+            document.getElementById('tap-stat').innerText = `+${gameState.clickPower.toLocaleString()} ₽`;
+            document.getElementById('passive-stat').innerText = `+${gameState.pps.toLocaleString()} ₽/сек`;
+            
+            document.getElementById('energy-text').innerText = `${gameState.energy} / ${gameState.maxEnergy}`;
+            
+            document.getElementById('session-clicks').innerText = gameState.sessionClicks.toLocaleString();
+            document.getElementById('session-earned').innerText = `${Math.floor(gameState.sessionEarned).toLocaleString()} ₽`;
+        }
+
+        // ИГРОВОЙ ТАЙМЕР (Пассивный доход и Энергия)
+        setInterval(() => {
+            if (gameState.pps > 0) {
+                gameState.coins += gameState.pps;
+                gameState.sessionEarned += gameState.pps;
+            }
+            if (gameState.energy < gameState.maxEnergy) {
+                gameState.energy = Math.min(gameState.maxEnergy, gameState.energy + 2);
+            }
+            gameState.sessionTimeSeconds++;
+            const m = Math.floor(gameState.sessionTimeSeconds / 60);
+            const s = gameState.sessionTimeSeconds % 60;
+            document.getElementById('session-time').innerText = `${m}м ${s}с`;
+
+            updateUI();
+        }, 1000);
+
+        // Инициализация
+        renderShop();
+        renderDailyGrid();
+        renderAchievements();
+        updateUI();
+
+        if (window.Telegram && window.Telegram.WebApp) {
+            window.Telegram.WebApp.ready();
+            window.Telegram.WebApp.expand();
+        }
+    </script>
+</body>
+</html> 
