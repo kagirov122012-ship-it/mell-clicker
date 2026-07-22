@@ -1,1 +1,796 @@
+ <!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>VEYLO VOID - Ultimate Clicker</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Telegram WebApp SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Adsgram SDK -->
+    <script src="https://adsgram.ai/js/adsgram-ad.js"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            font-family: 'Rajdhani', sans-serif;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .font-orbitron { font-family: 'Orbitron', sans-serif; }
 
+        @keyframes spin-slow {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        @keyframes spin-reverse {
+            0% { transform: rotate(360deg); }
+            100% { transform: rotate(0deg); }
+        }
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 25px rgba(168, 85, 247, 0.4), inset 0 0 15px rgba(168, 85, 247, 0.3); }
+            50% { box-shadow: 0 0 50px rgba(236, 72, 153, 0.7), inset 0 0 25px rgba(236, 72, 153, 0.5); }
+        }
+        .animate-spin-slow { animation: spin-slow 16s linear infinite; }
+        .animate-spin-reverse { animation: spin-reverse 22s linear infinite; }
+        .pulse-glow { animation: pulse-glow 2.5s infinite ease-in-out; }
+
+        .click-text {
+            position: absolute;
+            pointer-events: none;
+            animation: floatAndFade 0.75s ease-out forwards;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            text-shadow: 0 0 10px rgba(0,0,0,0.9), 0 0 5px rgba(168,85,247,0.8);
+            z-index: 100;
+        }
+        @keyframes floatAndFade {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            50% { opacity: 0.9; transform: translateY(-35px) scale(1.25); }
+            100% { opacity: 0; transform: translateY(-70px) scale(1); }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #08080c; }
+        ::-webkit-scrollbar-thumb { background: #2e1065; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #581c87; }
+    </style>
+</head>
+<body class="bg-[#07070a] text-gray-100 font-sans select-none overflow-hidden h-screen flex flex-col justify-between">
+
+    <!-- TOP HEADER / STATS BAR -->
+    <header class="w-full bg-[#0d0d14]/90 backdrop-blur-md border-b border-purple-900/30 p-3 flex justify-between items-center z-30 shadow-lg">
+        <div class="flex items-center space-x-2">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-yellow-500 to-amber-600 flex items-center justify-center shadow-md shadow-amber-500/20 border border-amber-400/40">
+                <i class="fa-solid fa-coins text-yellow-100 text-lg"></i>
+            </div>
+            <div>
+                <div class="text-[10px] uppercase font-bold tracking-wider text-gray-400">Монеты</div>
+                <div id="coin-balance" class="text-base font-orbitron font-bold text-yellow-400 tracking-wide">0</div>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-2">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-md shadow-cyan-500/20 border border-cyan-400/40">
+                <i class="fa-solid fa-gem text-cyan-100 text-lg"></i>
+            </div>
+            <div>
+                <div class="text-[10px] uppercase font-bold tracking-wider text-gray-400">Алмазы</div>
+                <div id="diamond-balance" class="text-base font-orbitron font-bold text-cyan-300 tracking-wide">0</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- NOTIFICATION TOAST -->
+    <div id="toast" class="fixed top-16 left-1/2 -translate-x-1/2 bg-purple-950/90 text-purple-200 px-5 py-2.5 rounded-full text-xs font-bold border border-purple-500/50 shadow-2xl opacity-0 transition-all duration-300 pointer-events-none z-50 flex items-center space-x-2 backdrop-blur-md">
+        <i class="fa-solid fa-bell text-purple-400"></i>
+        <span id="toast-message">Уведомление</span>
+    </div>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="flex-1 overflow-y-auto relative p-3 flex flex-col justify-center items-center">
+
+        <!-- 1. ВКТЛАДКА "ИГРА" (GAME TAB - PERFECTLY CENTERED) -->
+        <section id="tab-game" class="w-full h-full flex flex-col justify-between items-center py-1 max-w-md mx-auto">
+            
+            <!-- Статистика игрока -->
+            <div class="w-full grid grid-cols-2 gap-2 text-center">
+                <div class="bg-[#101018]/80 border border-purple-900/40 rounded-xl p-2.5 backdrop-blur-sm">
+                    <span class="text-[11px] text-gray-400 block font-medium"><i class="fa-solid fa-hand-pointer text-yellow-400 mr-1.5"></i>Сила клика</span>
+                    <span id="click-power-display" class="text-lg font-orbitron font-bold text-yellow-400">1</span>
+                </div>
+                <div class="bg-[#101018]/80 border border-purple-900/40 rounded-xl p-2.5 backdrop-blur-sm">
+                    <span class="text-[11px] text-gray-400 block font-medium"><i class="fa-solid fa-bolt text-purple-400 mr-1.5"></i>Доход в секунду</span>
+                    <span id="pps-display" class="text-lg font-orbitron font-bold text-purple-400">0</span>
+                </div>
+            </div>
+
+            <!-- Центральный анимированный кликер -->
+            <div class="relative flex items-center justify-center my-auto py-4">
+                <!-- Внешние декоративные круги -->
+                <div class="absolute w-72 h-72 rounded-full border border-dashed border-purple-500/30 animate-spin-slow pointer-events-none"></div>
+                <div class="absolute w-80 h-80 rounded-full border border-pink-500/20 animate-spin-reverse pointer-events-none"></div>
+
+                <!-- Главная кнопка клика -->
+                <button id="main-click-btn" class="relative w-56 h-56 rounded-full bg-gradient-to-tr from-purple-950 via-indigo-950 to-black p-2.5 pulse-glow active:scale-95 transition-transform duration-100 outline-none">
+                    <div class="w-full h-full rounded-full bg-[#0b0b12] border-2 border-purple-500/50 flex flex-col items-center justify-center shadow-2xl overflow-hidden relative group">
+                        <i class="fa-solid fa-skull text-6xl text-purple-400 drop-shadow-[0_0_20px_rgba(168,85,247,0.9)] transition-transform duration-200 group-active:scale-110"></i>
+                        <span class="mt-3 text-xs font-orbitron font-black tracking-widest text-purple-300 uppercase">VEYLO VOID</span>
+                    </div>
+                </button>
+            </div>
+
+            <!-- Нижняя панель действий -->
+            <div class="w-full space-y-2.5">
+                <!-- Кнопка Просмотра Рекламы -->
+                <div class="bg-gradient-to-r from-purple-950/60 to-pink-950/60 border border-purple-500/30 rounded-xl p-3 flex justify-between items-center shadow-lg">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 rounded-lg bg-pink-500/20 border border-pink-500/40 flex items-center justify-center">
+                            <i class="fa-solid fa-film text-pink-400 text-sm"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs font-bold text-white">Бонус Adsgram</div>
+                            <div class="text-[10px] text-gray-400">+10 💎 и +500 🪙 за просмотр</div>
+                        </div>
+                    </div>
+                    <button onclick="watchAd()" class="bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-bold py-1.5 px-3.5 rounded-lg text-xs shadow-md shadow-pink-950 active:scale-95 transition-all">
+                        Смотреть
+                    </button>
+                </div>
+
+                <!-- Шкала энергии -->
+                <div class="bg-[#101018]/80 border border-gray-800 rounded-xl p-2.5">
+                    <div class="flex justify-between text-xs font-semibold text-gray-400 mb-1">
+                        <span>Энергия</span>
+                        <span id="energy-text" class="text-purple-300 font-orbitron">1000 / 1000</span>
+                    </div>
+                    <div class="w-full bg-gray-950 rounded-full h-2.5 overflow-hidden border border-gray-800/80">
+                        <div id="energy-bar" class="bg-gradient-to-r from-purple-600 via-pink-500 to-yellow-400 h-full w-full transition-all duration-200"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. ВКТЛАДКА "МАГАЗИН" (SHOP TAB) -->
+        <section id="tab-shop" class="w-full h-full hidden flex-col max-w-md mx-auto">
+            <h2 class="text-lg font-orbitron font-bold mb-2 flex items-center text-purple-300">
+                <i class="fa-solid fa-store text-purple-400 mr-2"></i> Магазин Улучшений
+            </h2>
+            
+            <!-- Переключатели подкатегорий -->
+            <div class="grid grid-cols-4 gap-1 bg-[#101018] p-1 rounded-xl mb-3 border border-gray-800 text-xs font-bold text-center">
+                <button onclick="switchShopCategory('taps')" id="shop-cat-taps" class="py-2 rounded-lg bg-purple-600 text-white transition-all">Тапы</button>
+                <button onclick="switchShopCategory('auto')" id="shop-cat-auto" class="py-2 rounded-lg text-gray-400 hover:text-white transition-all">Пассив</button>
+                <button onclick="switchShopCategory('biz')" id="shop-cat-biz" class="py-2 rounded-lg text-gray-400 hover:text-white transition-all">Бизнес</button>
+                <button onclick="switchShopCategory('gems')" id="shop-cat-gems" class="py-2 rounded-lg text-cyan-400 hover:text-cyan-300 transition-all">Алмазы</button>
+            </div>
+
+            <!-- Контейнер товаров -->
+            <div id="shop-items-container" class="flex-1 overflow-y-auto space-y-2 pr-1">
+                <!-- Динамически заполняется через JS -->
+            </div>
+        </section>
+
+        <!-- 3. ВКТЛАДКА "КЕЙСЫ" (CASES TAB) -->
+        <section id="tab-cases" class="w-full h-full hidden flex-col max-w-md mx-auto">
+            <h2 class="text-lg font-orbitron font-bold mb-2 flex items-center text-pink-300">
+                <i class="fa-solid fa-box-open text-pink-400 mr-2"></i> Кейсы Сокровищ
+            </h2>
+            
+            <div id="cases-container" class="flex-1 overflow-y-auto space-y-2.5 pr-1">
+                <!-- Динамически заполняется через JS -->
+            </div>
+        </section>
+
+        <!-- 4. ВКТЛАДКА "КАЗИНО" (CASINO TAB) -->
+        <section id="tab-casino" class="w-full h-full hidden flex-col max-w-md mx-auto">
+            <h2 class="text-lg font-orbitron font-bold mb-2 flex items-center text-yellow-300">
+                <i class="fa-solid fa-dice text-yellow-400 mr-2"></i> Подпольное Казино
+            </h2>
+            
+            <!-- Панель управления ставкой -->
+            <div class="bg-[#101018] border border-gray-800 rounded-xl p-3 mb-3 shadow-md">
+                <div class="flex justify-between items-center mb-1.5">
+                    <label class="text-xs text-gray-400 font-bold uppercase">Размер Ставки</label>
+                    <span class="text-[10px] text-gray-500">Баланс: <span id="casino-user-balance" class="text-yellow-400 font-orbitron">0</span></span>
+                </div>
+                <div class="flex space-x-1.5">
+                    <input type="number" id="casino-bet-input" value="1000" min="1" class="w-full bg-black/70 border border-purple-900/40 rounded-lg px-3 py-1.5 text-sm font-orbitron text-yellow-400 focus:outline-none focus:border-purple-500">
+                    <button onclick="setBetPercent(0.25)" class="bg-gray-800 hover:bg-gray-700 text-[11px] font-bold px-2.5 py-1.5 rounded-lg border border-gray-700">25%</button>
+                    <button onclick="setBetPercent(0.50)" class="bg-gray-800 hover:bg-gray-700 text-[11px] font-bold px-2.5 py-1.5 rounded-lg border border-gray-700">50%</button>
+                    <button onclick="setBetAllIn()" class="bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-500 hover:to-pink-500 text-xs font-black px-3 py-1.5 rounded-lg text-white shadow-md shadow-red-950">ALL IN</button>
+                </div>
+            </div>
+
+            <!-- Игры казино -->
+            <div class="grid grid-cols-1 gap-3 overflow-y-auto flex-1 pr-1">
+                <!-- Игра 1: Кости -->
+                <div class="bg-[#101018] border border-purple-900/30 rounded-xl p-3.5 flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-bold text-sm text-purple-200"><i class="fa-solid fa-dice-five text-purple-400 mr-2"></i>Кости Вейло</span>
+                            <span class="text-[10px] font-orbitron font-bold text-purple-300 bg-purple-950 px-2 py-0.5 rounded border border-purple-800">x1.95</span>
+                        </div>
+                        <p class="text-xs text-gray-400 mb-3">Выберите диапазоны: 1-3 или 4-6. Выигрыш почти удваивает ставку!</p>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="playDice('under')" class="bg-purple-900/40 hover:bg-purple-800 border border-purple-500/40 text-white font-bold py-2 rounded-lg text-xs transition-all active:scale-95">1, 2 или 3</button>
+                        <button onclick="playDice('over')" class="bg-indigo-900/40 hover:bg-indigo-800 border border-indigo-500/40 text-white font-bold py-2 rounded-lg text-xs transition-all active:scale-95">4, 5 или 6</button>
+                    </div>
+                </div>
+
+                <!-- Игра 2: Рулетка Множитель -->
+                <div class="bg-[#101018] border border-pink-900/30 rounded-xl p-3.5 flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-bold text-sm text-pink-200"><i class="fa-solid fa-arrows-spin text-pink-400 mr-2"></i>Колесо Фортуны</span>
+                            <span class="text-[10px] font-orbitron font-bold text-pink-300 bg-pink-950 px-2 py-0.5 rounded border border-pink-800">x0 - x10</span>
+                        </div>
+                        <p class="text-xs text-gray-400 mb-3">Испытайте удачу! Множители от полного сгорания до x10.</p>
+                    </div>
+                    <button onclick="spinRoulette()" class="w-full bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-bold py-2 rounded-lg text-xs shadow-lg shadow-pink-950 active:scale-95 transition-all">
+                        Вращать Рулетку
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. ВКТЛАДКА "СИНДИКАТ" (SYNDICATE TAB) -->
+        <section id="tab-syndicate" class="w-full h-full hidden flex-col max-w-md mx-auto">
+            <!-- Шапка клана -->
+            <div class="bg-gradient-to-br from-purple-950 via-[#101018] to-indigo-950 border border-purple-500/40 rounded-2xl p-4 mb-3 text-center relative overflow-hidden shadow-xl">
+                <div class="text-[10px] font-orbitron font-bold text-purple-400 uppercase tracking-widest mb-1">Теневой Синдикат</div>
+                <div class="text-xl font-orbitron font-black text-white mb-1 tracking-wide"><i class="fa-solid fa-shield-halved text-purple-400 mr-2"></i>VEYLO VOID CLAN</div>
+                <div class="text-xs text-gray-300">Статус Клана: <span class="text-yellow-400 font-bold">Элитный (Уровень 5)</span></div>
+                <div class="text-[11px] text-purple-300 mt-1">Бонус к общей прибыли: <span class="text-green-400 font-bold">+15%</span></div>
+            </div>
+
+            <h3 class="text-xs font-orbitron font-bold text-gray-300 mb-2 flex items-center uppercase tracking-wider">
+                <i class="fa-solid fa-trophy text-yellow-400 mr-2"></i> Достижения и Награды
+            </h3>
+            
+            <div id="achievements-container" class="flex-1 overflow-y-auto space-y-2 pr-1">
+                <!-- Динамически заполняется через JS -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- BOTTOM NAVIGATION BAR -->
+    <nav class="w-full bg-[#0d0d14] border-t border-purple-900/30 grid grid-cols-5 py-2 px-1 z-30 shadow-2xl">
+        <button onclick="switchTab('game')" id="nav-game" class="flex flex-col items-center justify-center text-purple-400 transition-colors">
+            <i class="fa-solid fa-gamepad text-base"></i>
+            <span class="text-[10px] font-bold mt-1">Игра</span>
+        </button>
+        <button onclick="switchTab('shop')" id="nav-shop" class="flex flex-col items-center justify-center text-gray-400 hover:text-purple-300 transition-colors">
+            <i class="fa-solid fa-cart-shopping text-base"></i>
+            <span class="text-[10px] font-bold mt-1">Магазин</span>
+        </button>
+        <button onclick="switchTab('cases')" id="nav-cases" class="flex flex-col items-center justify-center text-gray-400 hover:text-purple-300 transition-colors">
+            <i class="fa-solid fa-box-open text-base"></i>
+            <span class="text-[10px] font-bold mt-1">Кейсы</span>
+        </button>
+        <button onclick="switchTab('casino')" id="nav-casino" class="flex flex-col items-center justify-center text-gray-400 hover:text-purple-300 transition-colors">
+            <i class="fa-solid fa-dice text-base"></i>
+            <span class="text-[10px] font-bold mt-1">Казино</span>
+        </button>
+        <button onclick="switchTab('syndicate')" id="nav-syndicate" class="flex flex-col items-center justify-center text-gray-400 hover:text-purple-300 transition-colors">
+            <i class="fa-solid fa-shield-halved text-base"></i>
+            <span class="text-[10px] font-bold mt-1">Синдикат</span>
+        </button>
+    </nav>
+
+    <!-- SCRIPT & GAME ENGINE LOGIC -->
+    <script>
+        // ИНИЦИАЛИЗАЦИЯ ADSGRAM
+        const ADSGRAM_BLOCK_ID = "YOUR_BLOCK_ID_HERE";
+        let AdController = null;
+
+        if (window.Adsgram) {
+            AdController = window.Adsgram.init({ blockId: ADSGRAM_BLOCK_ID });
+        }
+
+        // ОСНОВНОЕ СОСТОЯНИЕ ИГРЫ
+        let gameState = {
+            coins: 0,
+            diamonds: 10,
+            clickPower: 1,
+            pps: 0,
+            energy: 1000,
+            maxEnergy: 1000,
+            totalClicks: 0,
+            lastSaveTime: Date.now(),
+            claimedAchievements: [],
+            inventory: {
+                taps: {},
+                auto: {},
+                biz: {},
+                gems: {}
+            }
+        };
+
+        // ТОВАРЫ В МАГАЗИНЕ (РОВНО ПО 15 ПРЕДМЕТОВ В КАЖДОЙ КАТЕГОРИИ)
+        const shopData = {
+            taps: [
+                { id: "t1", name: "Деревянный палец", cost: 15, power: 1 },
+                { id: "t2", name: "Медный кликер", cost: 80, power: 3 },
+                { id: "t3", name: "Железный тап", cost: 400, power: 8 },
+                { id: "t4", name: "Стальной стилус", cost: 1800, power: 22 },
+                { id: "t5", name: "Золотое касание", cost: 7500, power: 55 },
+                { id: "t6", name: "Алмазный шип", cost: 24000, power: 130 },
+                { id: "t7", name: "Изумрудный Перст", cost: 70000, power: 320 },
+                { id: "t8", name: "Рубиновый удар", cost: 190000, power: 800 },
+                { id: "t9", name: "Неоновый клик", cost: 550000, power: 2100 },
+                { id: "t10", name: "Плазменный сгусток", cost: 1600000, power: 5500 },
+                { id: "t11", name: "Лазерный луч", cost: 4800000, power: 13000 },
+                { id: "t12", name: "Квантовый перст", cost: 14000000, power: 32000 },
+                { id: "t13", name: "Тёмная материя", cost: 42000000, power: 85000 },
+                { id: "t14", name: "Глаз Пустоты", cost: 110000000, power: 220000 },
+                { id: "t15", name: "Перчатка VEYLO VOID", cost: 380000000, power: 550000 }
+            ],
+            auto: [
+                { id: "a1", name: "Курсор-кликер", cost: 50, pps: 1 },
+                { id: "a2", name: "Авто-Скрипт v1", cost: 250, pps: 4 },
+                { id: "a3", name: "Фарм-бот", cost: 1000, pps: 12 },
+                { id: "a4", name: "Серверный поток", cost: 4500, pps: 40 },
+                { id: "a5", name: "Майнинг-риг", cost: 16000, pps: 110 },
+                { id: "a6", name: "Дата-центр", cost: 55000, pps: 320 },
+                { id: "a7", name: "Нейросеть Alpha", cost: 180000, pps: 950 },
+                { id: "a8", name: "Квантовый чип", cost: 600000, pps: 2600 },
+                { id: "a9", name: "Блокчейн Нода", cost: 1900000, pps: 7200 },
+                { id: "a10", name: "Кибер-ферма", cost: 5500000, pps: 19000 },
+                { id: "a11", name: "Сверхмозг V2", cost: 17000000, pps: 52000 },
+                { id: "a12", name: "Орбитальный сервер", cost: 48000000, pps: 135000 },
+                { id: "a13", name: "Матричный узел", cost: 140000000, pps: 360000 },
+                { id: "a14", name: "Сингулярный вычислитель", cost: 420000000, pps: 980000 },
+                { id: "a15", name: "Ядро Вселенной VEYLO", cost: 1100000000, pps: 2600000 }
+            ],
+            biz: [
+                { id: "b1", name: "Ларёк с кофе", cost: 400, pps: 8 },
+                { id: "b2", name: "Шаурмичная", cost: 2000, pps: 35 },
+                { id: "b3", name: "Киберкафе", cost: 8500, pps: 130 },
+                { id: "b4", name: "Автомойка 24/7", cost: 35000, pps: 450 },
+                { id: "b5", name: "Ночной Клуб", cost: 130000, pps: 1500 },
+                { id: "b6", name: "Сеть Ресторанов", cost: 450000, pps: 4200 },
+                { id: "b7", name: "IT Стартап", cost: 1500000, pps: 12000 },
+                { id: "b8", name: "Завод Электроники", cost: 4500000, pps: 35000 },
+                { id: "b9", name: "Банк VEYLO", cost: 14000000, pps: 95000 },
+                { id: "b10", name: "Нефтяная вышка", cost: 40000000, pps: 260000 },
+                { id: "b11", name: "Сеть Казино", cost: 120000000, pps: 700000 },
+                { id: "b12", name: "Космодром", cost: 380000000, pps: 2000000 },
+                { id: "b13", name: "Энерго-Корпорация", cost: 950000000, pps: 5200000 },
+                { id: "b14", name: "Орбитальная Станция", cost: 2800000000, pps: 14000000 },
+                { id: "b15", name: "Галактическая Империя", cost: 8500000000, pps: 40000000 }
+            ],
+            gems: [
+                { id: "g1", name: "Пакet Новичка", costGems: 5, rewardCoins: 8000 },
+                { id: "g2", name: "Полный Заряд Энергии", costGems: 8, fillEnergy: true },
+                { id: "g3", name: "Алмазный Тап (+80)", costGems: 12, power: 80 },
+                { id: "g4", name: "Мешок Золота", costGems: 20, rewardCoins: 60000 },
+                { id: "g5", name: "Ускоритель Клика (+250)", costGems: 35, power: 250 },
+                { id: "g6", name: "Сундук Кристаллов", costGems: 50, rewardCoins: 220000 },
+                { id: "g7", name: "Кристальный Авто-Буст", costGems: 75, pps: 1800 },
+                { id: "g8", name: "Сокровища Синдиката", costGems: 100, rewardCoins: 550000 },
+                { id: "g9", name: "Аура Пустоты (+900)", costGems: 150, power: 900 },
+                { id: "g10", name: "Квантовый Капитал", costGems: 220, rewardCoins: 1400000 },
+                { id: "g11", name: "Гипер Клик (+2800)", costGems: 300, power: 2800 },
+                { id: "g12", name: "Денежная Вспышка", costGems: 450, rewardCoins: 3800000 },
+                { id: "g13", name: "Вечный Пассив", costGems: 700, pps: 22000 },
+                { id: "g14", name: "Капитал Олигарха", costGems: 950, rewardCoins: 9500000 },
+                { id: "g15", name: "Божественная Власть", costGems: 1800, power: 22000 }
+            ]
+        };
+
+        // ДАННЫЕ КЕЙСОВ
+        const casesData = [
+            { id: "c1", name: "Деревянный Кейс", costCoins: 1000, costGems: 0, minCoins: 600, maxCoins: 3500, minGems: 1, maxGems: 3 },
+            { id: "c2", name: "Серебряный Кейс", costCoins: 20000, costGems: 0, minCoins: 12000, maxCoins: 70000, minGems: 3, maxGems: 7 },
+            { id: "c3", name: "Золотой Сейф", costCoins: 200000, costGems: 0, minCoins: 130000, maxCoins: 750000, minGems: 8, maxGems: 25 },
+            { id: "c4", name: "Эпический Контейнер", costCoins: 2000000, costGems: 0, minCoins: 1300000, maxCoins: 7500000, minGems: 40, maxGems: 120 },
+            { id: "c5", name: "Алмазный Сундук", costCoins: 0, costGems: 40, minCoins: 400000, maxCoins: 4500000, minGems: 50, maxGems: 180 }
+        ];
+
+        // ДОСТИЖЕНИЯ
+        const achievementsData = [
+            { id: "ach1", title: "Первые Шаги", desc: "Сделай 1 клик", reqClicks: 1, rewardCoins: 100, rewardGems: 2 },
+            { id: "ach2", title: "Начало Пути", desc: "Сделай 100 кликов", reqClicks: 100, rewardCoins: 2000, rewardGems: 5 },
+            { id: "ach3", title: "Клик-Мастер", desc: "Сделай 1,000 кликов", reqClicks: 1000, rewardCoins: 20000, rewardGems: 15 },
+            { id: "ach4", title: "Пальцы из Стали", desc: "Сделай 5,000 кликов", reqClicks: 5000, rewardCoins: 120000, rewardGems: 35 },
+            { id: "ach5", title: "Властитель Клика", desc: "Сделай 25,000 кликов", reqClicks: 25000, rewardCoins: 600000, rewardGems: 100 },
+            { id: "ach6", title: "Легенда Синдиката", desc: "Сделай 100,000 кликов", reqClicks: 100000, rewardCoins: 3000000, rewardGems: 300 }
+        ];
+
+        // ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК
+        let currentShopCat = "taps";
+
+        function switchTab(tabId) {
+            ['game', 'shop', 'cases', 'casino', 'syndicate'].forEach(t => {
+                document.getElementById(`tab-${t}`).classList.add('hidden');
+                document.getElementById(`nav-${t}`).classList.remove('text-purple-400');
+                document.getElementById(`nav-${t}`).classList.add('text-gray-400');
+            });
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            document.getElementById(`tab-${tabId}`).classList.add('flex');
+            document.getElementById(`nav-${tabId}`).classList.add('text-purple-400');
+            document.getElementById(`nav-${tabId}`).classList.remove('text-gray-400');
+        }
+
+        function switchShopCategory(cat) {
+            currentShopCat = cat;
+            ['taps', 'auto', 'biz', 'gems'].forEach(c => {
+                const btn = document.getElementById(`shop-cat-${c}`);
+                btn.classList.remove('bg-purple-600', 'text-white');
+                btn.classList.add('text-gray-400');
+            });
+            const activeBtn = document.getElementById(`shop-cat-${cat}`);
+            activeBtn.classList.add('bg-purple-600', 'text-white');
+            activeBtn.classList.remove('text-gray-400');
+            renderShop();
+        }
+
+        function showNotification(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-message').innerText = msg;
+            toast.classList.remove('opacity-0');
+            toast.classList.add('opacity-100');
+            setTimeout(() => {
+                toast.classList.remove('opacity-100');
+                toast.classList.add('opacity-0');
+            }, 2200);
+        }
+
+        // ОБРАБОТКА КЛИКА С ВСПЛЫВАЮЩИМ ТЕКСТОМ
+        const clickBtn = document.getElementById('main-click-btn');
+        clickBtn.addEventListener('click', (e) => {
+            if (gameState.energy <= 0) {
+                showNotification("Энергия исчерпана!");
+                return;
+            }
+
+            gameState.coins += gameState.clickPower;
+            gameState.energy--;
+            gameState.totalClicks++;
+
+            // Создание текста клика
+            const rect = clickBtn.getBoundingClientRect();
+            const text = document.createElement('div');
+            text.className = 'click-text text-yellow-300 text-lg';
+            text.innerText = `+${gameState.clickPower}`;
+            
+            const x = (e.clientX || rect.left + rect.width / 2) + (Math.random() * 30 - 15);
+            const y = (e.clientY || rect.top + rect.height / 2) - 20;
+            
+            text.style.left = `${x}px`;
+            text.style.top = `${y}px`;
+            document.body.appendChild(text);
+
+            setTimeout(() => text.remove(), 750);
+
+            updateUI();
+            saveGame();
+        });
+
+        // КАЗИНО (ALL IN И РЕЖИМЫ ИГРЫ)
+        function setBetPercent(percent) {
+            const bet = Math.floor(gameState.coins * percent);
+            document.getElementById('casino-bet-input').value = Math.max(1, bet);
+        }
+
+        function setBetAllIn() {
+            document.getElementById('casino-bet-input').value = Math.max(1, Math.floor(gameState.coins));
+        }
+
+        function playDice(choice) {
+            const betInput = document.getElementById('casino-bet-input');
+            const bet = parseInt(betInput.value);
+
+            if (isNaN(bet) || bet <= 0 || bet > gameState.coins) {
+                showNotification("Некорректный размер ставки!");
+                return;
+            }
+
+            gameState.coins -= bet;
+            const roll = Math.floor(Math.random() * 6) + 1;
+            const isUnder = choice === 'under' && roll <= 3;
+            const isOver = choice === 'over' && roll >= 4;
+
+            if (isUnder || isOver) {
+                const win = Math.floor(bet * 1.95);
+                gameState.coins += win;
+                showNotification(`Выпало ${roll}! Выиграно ${win.toLocaleString()} 🪙`);
+            } else {
+                showNotification(`Выпало ${roll}! Ставка проиграна`);
+            }
+            updateUI();
+            saveGame();
+        }
+
+        function spinRoulette() {
+            const betInput = document.getElementById('casino-bet-input');
+            const bet = parseInt(betInput.value);
+
+            if (isNaN(bet) || bet <= 0 || bet > gameState.coins) {
+                showNotification("Некорректный размер ставки!");
+                return;
+            }
+
+            gameState.coins -= bet;
+            const multipliers = [0, 0, 0.5, 1.2, 1.8, 2.5, 5.0, 10.0];
+            const mult = multipliers[Math.floor(Math.random() * multipliers.length)];
+            const win = Math.floor(bet * mult);
+
+            gameState.coins += win;
+            if (mult > 1) {
+                showNotification(`Множитель x${mult}! Забрал ${win.toLocaleString()} 🪙`);
+            } else {
+                showNotification(`Множитель x${mult}. Выигрыш: ${win.toLocaleString()} 🪙`);
+            }
+            updateUI();
+            saveGame();
+        }
+
+        // РЕКЛАМА ADSGRAM
+        function watchAd() {
+            if (AdController) {
+                AdController.show().then(() => {
+                    gameState.diamonds += 10;
+                    gameState.coins += 500;
+                    showNotification("Награда получен: +10 💎 и +500 🪙!");
+                    updateUI();
+                    saveGame();
+                }).catch(() => {
+                    showNotification("Реклама не завершена!");
+                });
+            } else {
+                gameState.diamonds += 10;
+                gameState.coins += 500;
+                showNotification("[ТЕСТ] Награда получена: +10 💎 и +500 🪙!");
+                updateUI();
+                saveGame();
+            }
+        }
+
+        // РЕНДЕР МАГАЗИНА
+        function renderShop() {
+            const container = document.getElementById('shop-items-container');
+            container.innerHTML = "";
+
+            const items = shopData[currentShopCat];
+            items.forEach(item => {
+                const count = gameState.inventory[currentShopCat][item.id] || 0;
+                let currentCost = item.cost ? Math.floor(item.cost * Math.pow(1.15, count)) : item.costGems;
+                
+                const div = document.createElement('div');
+                div.className = "bg-[#101018] border border-gray-800/80 rounded-xl p-3 flex justify-between items-center shadow-md";
+                
+                let subtext = "";
+                if (item.power) subtext = `+${item.power} к клику`;
+                if (item.pps) subtext = `+${item.pps}/сек`;
+                if (item.rewardCoins) subtext = `+${item.rewardCoins.toLocaleString()} монет`;
+                if (item.fillEnergy) subtext = `Восстановление энергии`;
+
+                const isGemItem = currentShopCat === 'gems';
+                const currencyIcon = isGemItem ? "💎" : "🪙";
+
+                div.innerHTML = `
+                    <div>
+                        <div class="font-bold text-xs text-white">${item.name} <span class="text-[10px] text-purple-400 font-normal">(${count})</span></div>
+                        <div class="text-[11px] text-gray-400">${subtext}</div>
+                    </div>
+                    <button onclick="buyShopItem('${currentShopCat}', '${item.id}')" class="bg-purple-900/30 hover:bg-purple-800/60 border border-purple-500/40 text-white text-xs font-bold py-1.5 px-3 rounded-lg flex items-center space-x-1 transition-all active:scale-95">
+                        <span class="font-orbitron text-[11px]">${currentCost.toLocaleString()}</span>
+                        <span>${currencyIcon}</span>
+                    </button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function buyShopItem(cat, id) {
+            const item = shopData[cat].find(i => i.id === id);
+            const count = gameState.inventory[cat][id] || 0;
+
+            if (cat === 'gems') {
+                if (gameState.diamonds < item.costGems) {
+                    showNotification("Недостаточно алмазов!");
+                    return;
+                }
+                gameState.diamonds -= item.costGems;
+                if (item.power) gameState.clickPower += item.power;
+                if (item.pps) gameState.pps += item.pps;
+                if (item.rewardCoins) gameState.coins += item.rewardCoins;
+                if (item.fillEnergy) gameState.energy = gameState.maxEnergy;
+            } else {
+                let cost = Math.floor(item.cost * Math.pow(1.15, count));
+                if (gameState.coins < cost) {
+                    showNotification("Недостаточно монет!");
+                    return;
+                }
+                gameState.coins -= cost;
+                if (item.power) gameState.clickPower += item.power;
+                if (item.pps) gameState.pps += item.pps;
+            }
+
+            gameState.inventory[cat][id] = count + 1;
+            showNotification(`Куплено: ${item.name}`);
+            renderShop();
+            updateUI();
+            saveGame();
+        }
+
+        // РЕНДЕР КЕЙСОВ
+        function renderCases() {
+            const container = document.getElementById('cases-container');
+            container.innerHTML = "";
+
+            casesData.forEach(c => {
+                const div = document.createElement('div');
+                div.className = "bg-[#101018] border border-pink-900/30 rounded-xl p-3 flex justify-between items-center shadow-md";
+                const costText = c.costCoins > 0 ? `${c.costCoins.toLocaleString()} 🪙` : `${c.costGems} 💎`;
+
+                div.innerHTML = `
+                    <div>
+                        <div class="font-bold text-xs text-white">${c.name}</div>
+                        <div class="text-[11px] text-gray-400">Награда: ${c.minCoins.toLocaleString()} - ${c.maxCoins.toLocaleString()} 🪙</div>
+                    </div>
+                    <button onclick="openCase('${c.id}')" class="bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-orbitron font-bold text-xs py-1.5 px-3 rounded-lg shadow-md shadow-pink-950 active:scale-95 transition-all">
+                        ${costText}
+                    </button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function openCase(id) {
+            const c = casesData.find(item => item.id === id);
+            if (c.costCoins > 0 && gameState.coins < c.costCoins) {
+                showNotification("Недостаточно монет!");
+                return;
+            }
+            if (c.costGems > 0 && gameState.diamonds < c.costGems) {
+                showNotification("Недостаточно алмазов!");
+                return;
+            }
+
+            if (c.costCoins > 0) gameState.coins -= c.costCoins;
+            if (c.costGems > 0) gameState.diamonds -= c.costGems;
+
+            const winCoins = Math.floor(Math.random() * (c.maxCoins - c.minCoins + 1)) + c.minCoins;
+            const winGems = Math.floor(Math.random() * (c.maxGems - c.minGems + 1)) + c.minGems;
+
+            gameState.coins += winCoins;
+            gameState.diamonds += winGems;
+
+            showNotification(`Из кейса выпало: +${winCoins.toLocaleString()} 🪙 и +${winGems} 💎`);
+            updateUI();
+            saveGame();
+        }
+
+        // РЕНДЕР ДОСТИЖЕНИЙ
+        function renderAchievements() {
+            const container = document.getElementById('achievements-container');
+            container.innerHTML = "";
+
+            achievementsData.forEach(ach => {
+                const isClaimed = gameState.claimedAchievements.includes(ach.id);
+                const canClaim = gameState.totalClicks >= ach.reqClicks && !isClaimed;
+
+                const div = document.createElement('div');
+                div.className = "bg-[#101018] border border-gray-800/80 rounded-xl p-3 flex justify-between items-center shadow-md";
+
+                let btnClass = "bg-gray-800 text-gray-500 text-[11px] py-1 px-2.5 rounded-lg";
+                let btnText = "Заблокировано";
+
+                if (isClaimed) {
+                    btnText = "Забрано";
+                } else if (canClaim) {
+                    btnClass = "bg-green-600 hover:bg-green-500 text-white font-bold text-[11px] py-1 px-2.5 rounded-lg active:scale-95 transition-all";
+                    btnText = "Забрать";
+                }
+
+                div.innerHTML = `
+                    <div>
+                        <div class="font-bold text-xs text-white">${ach.title}</div>
+                        <div class="text-[11px] text-gray-400">${ach.desc} (${Math.min(gameState.totalClicks, ach.reqClicks)}/${ach.reqClicks})</div>
+                        <div class="text-[10px] text-yellow-400 mt-0.5">+${ach.rewardCoins.toLocaleString()} 🪙 | +${ach.rewardGems} 💎</div>
+                    </div>
+                    <button ${canClaim ? `onclick="claimAchievement('${ach.id}')"` : 'disabled'} class="${btnClass}">
+                        ${btnText}
+                    </button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function claimAchievement(id) {
+            const ach = achievementsData.find(a => a.id === id);
+            if (!ach || gameState.claimedAchievements.includes(id)) return;
+
+            gameState.coins += ach.rewardCoins;
+            gameState.diamonds += ach.rewardGems;
+            gameState.claimedAchievements.push(id);
+
+            showNotification(`Награда получена: +${ach.rewardCoins.toLocaleString()} 🪙`);
+            renderAchievements();
+            updateUI();
+            saveGame();
+        }
+
+        // ОБНОВЛЕНИЕ ИНТЕРФЕЙСА
+        function updateUI() {
+            document.getElementById('coin-balance').innerText = Math.floor(gameState.coins).toLocaleString();
+            document.getElementById('diamond-balance').innerText = Math.floor(gameState.diamonds).toLocaleString();
+            document.getElementById('casino-user-balance').innerText = Math.floor(gameState.coins).toLocaleString();
+            
+            document.getElementById('click-power-display').innerText = gameState.clickPower.toLocaleString();
+            document.getElementById('pps-display').innerText = gameState.pps.toLocaleString();
+            
+            document.getElementById('energy-text').innerText = `${gameState.energy} / ${gameState.maxEnergy}`;
+            const energyPercent = (gameState.energy / gameState.maxEnergy) * 100;
+            document.getElementById('energy-bar').style.width = `${energyPercent}%`;
+        }
+
+        // ИГРОВОЙ ТАЙМЕР И СОХРАНЕНИЕ
+        setInterval(() => {
+            // Пассивный доход
+            if (gameState.pps > 0) {
+                gameState.coins += gameState.pps;
+            }
+
+            // Восстановление энергии (+3 в сек)
+            if (gameState.energy < gameState.maxEnergy) {
+                gameState.energy = Math.min(gameState.maxEnergy, gameState.energy + 3);
+            }
+
+            updateUI();
+        }, 1000);
+
+        setInterval(() => {
+            saveGame();
+        }, 5000);
+
+        function saveGame() {
+            gameState.lastSaveTime = Date.now();
+            localStorage.setItem('veylo_void_save', JSON.stringify(gameState));
+        }
+
+        function loadGame() {
+            const saved = localStorage.getItem('veylo_void_save');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    gameState = { ...gameState, ...parsed };
+                    
+                    // Расчет офлайн дохода
+                    const now = Date.now();
+                    const offlineSeconds = Math.floor((now - (gameState.lastSaveTime || now)) / 1000);
+                    if (offlineSeconds > 5 && gameState.pps > 0) {
+                        const offlineEarned = offlineSeconds * gameState.pps;
+                        gameState.coins += offlineEarned;
+                        setTimeout(() => {
+                            showNotification(`Офлайн доход: +${offlineEarned.toLocaleString()} 🪙`);
+                        }, 1000);
+                    }
+                } catch(e) {}
+            }
+        }
+
+        // ИНИЦИАЛИЗАЦИЯ
+        loadGame();
+        renderShop();
+        renderCases();
+        renderAchievements();
+        updateUI();
+
+        if (window.Telegram && window.Telegram.WebApp) {
+            window.Telegram.WebApp.ready();
+            window.Telegram.WebApp.expand();
+        }
+    </script>
+</body>
+</html>
