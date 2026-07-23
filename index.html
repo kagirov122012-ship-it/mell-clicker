@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mellstroy Syndicate: Multiverse Edition</title>
+    <!-- Яндекс Игры SDK -->
+    <script src="https://yandex.ru/games/sdk/v2"></script>
+    <style>
+        :root {
+            --bg-dark: #0a0813;
+            --panel-bg: #15102a;
+            --card-bg: #1e183a;
+            --border-color: #32285a;
+            --gold: #ffd700;
+            --cyan: #00f2fe;
+            --pink: #ff007f;
+            --green: #00ff88;
+            --theme-glow: rgba(255, 0, 127, 0.4);
+            --text-main: #ffffff;
+            --text-muted: #9a8ebf;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            transition: background-color 0.6s ease;
+        }
+
+        /* --- ТЕМАТИЧЕСКИЕ СТИЛИ ДЛЯ МИРОВ --- */
+        body.theme-dubai {
+            --bg-dark: #120d02;
+            --panel-bg: #211905;
+            --card-bg: #2e230a;
+            --border-color: #5c4714;
+            --theme-glow: rgba(255, 215, 0, 0.5);
+        }
+
+        body.theme-miami {
+            --bg-dark: #02121a;
+            --panel-bg: #05212e;
+            --card-bg: #0a2d3e;
+            --border-color: #14506e;
+            --theme-glow: rgba(0, 242, 254, 0.5);
+        }
+
+        body.theme-mars {
+            --bg-dark: #1a0303;
+            --panel-bg: #2e0808;
+            --card-bg: #3d0e0e;
+            --border-color: #6e1a1a;
+            --theme-glow: rgba(255, 68, 68, 0.6);
+        }
+
+        /* --- ВЕРХНЯЯ СТАТИСТИКА --- */
+        .header-stats {
+            background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, var(--panel-bg) 100%);
+            border-bottom: 2px solid var(--border-color);
+            padding: 10px 14px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+            z-index: 10;
+            transition: border-color 0.5s ease;
+        }
+
+        .balance-box {
+            text-align: center;
+            margin-bottom: 6px;
+        }
+
+        .world-badge-top {
+            font-size: 10px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--cyan);
+            margin-bottom: 2px;
+        }
+
+        .balance-value {
+            font-size: 28px;
+            font-weight: 900;
+            color: var(--gold);
+            text-shadow: 0 0 12px var(--theme-glow);
+            line-height: 1.1;
+        }
+
+        .pps-value {
+            font-size: 12px;
+            color: var(--cyan);
+            font-weight: 700;
+            margin-top: 2px;
+        }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+            margin-top: 8px;
+        }
+
+        .stat-card {
+            background: rgba(0,0,0,0.35);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 5px 6px;
+            text-align: center;
+            transition: border-color 0.5s ease;
+        }
+
+        .stat-card .lbl {
+            font-size: 9px;
+            color: var(--text-muted);
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        .stat-card .val {
+            font-size: 11px;
+            font-weight: 800;
+            color: var(--green);
+        }
+
+        .energy-outer {
+            width: 100%;
+            height: 6px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 3px;
+            margin-top: 8px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .energy-inner {
+            height: 100%;
+            background: linear-gradient(90deg, var(--pink), var(--cyan));
+            width: 100%;
+            transition: width 0.2s ease-out;
+        }
+
+        /* --- ГЛАВНАЯ ЗОНА КЛИКА --- */
+        .click-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            background: radial-gradient(circle at center, rgba(255,255,255,0.05) 0%, var(--bg-dark) 85%);
+            overflow: hidden;
+        }
+
+        .ad-btn {
+            position: absolute;
+            top: 8px;
+            background: linear-gradient(90deg, #ff8c00, #e52d27);
+            color: #fff;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-weight: 800;
+            font-size: 11px;
+            box-shadow: 0 4px 12px rgba(229, 45, 39, 0.4);
+            cursor: pointer;
+            z-index: 5;
+            animation: pulseAd 1.8s infinite;
+        }
+
+        @keyframes pulseAd {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.04); }
+            100% { transform: scale(1); }
+        }
+
+        .character-wrapper {
+            position: relative;
+            cursor: pointer;
+            width: 180px;
+            height: 180px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .character-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 4px solid var(--gold);
+            box-shadow: 0 0 35px var(--theme-glow);
+            transition: transform 0.05s ease, border-color 0.5s ease;
+            background-color: var(--panel-bg);
+        }
+
+        .character-wrapper:active .character-img {
+            transform: scale(0.91);
+        }
+
+        .combo-badge {
+            position: absolute;
+            bottom: -10px;
+            background: #000;
+            border: 1px solid var(--cyan);
+            color: var(--cyan);
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 900;
+        }
+
+        .floating-num {
+            position: absolute;
+            font-weight: 900;
+            font-size: 24px;
+            color: var(--gold);
+            pointer-events: none;
+            animation: floatAndFade 0.75s ease-out forwards;
+            text-shadow: 0 2px 6px rgba(0,0,0,0.9);
+            z-index: 25;
+        }
+
+        @keyframes floatAndFade {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-75px) scale(1.3); }
+        }
+
+        /* --- НАВИГАЦИОННЫЕ ТАБЫ --- */
+        .tabs-header {
+            display: flex;
+            background: var(--panel-bg);
+            border-top: 2px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+            overflow-x: auto;
+            scrollbar-width: none;
+            white-space: nowrap;
+            transition: border-color 0.5s ease, background 0.5s ease;
+        }
+
+        .tabs-header::-webkit-scrollbar {
+            display: none;
+        }
+
+        .tab-btn {
+            padding: 10px 14px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-weight: 800;
+            font-size: 11px;
+            text-transform: uppercase;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .tab-btn.active {
+            color: var(--gold);
+            border-bottom-color: var(--gold);
+            background: rgba(255, 215, 0, 0.06);
+        }
+
+        /* --- НИЖНЯЯ ПАНЕЛЬ КОНТЕНТА --- */
+        .content-panel {
+            height: 42vh;
+            background: var(--bg-dark);
+            overflow-y: auto;
+            padding: 10px;
+            transition: background 0.5s ease;
+        }
+
+        .tab-content {
+            display: none;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .tab-content.active {
+            display: flex;
+        }
+
+        .shop-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 10px 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: border-color 0.5s ease, background 0.5s ease;
+        }
+
+        .shop-card-icon {
+            font-size: 28px;
+            margin-right: 10px;
+            background: rgba(0,0,0,0.3);
+            width: 46px;
+            height: 46px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.05);
+            overflow: hidden;
+        }
+
+        .shop-card-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .shop-card-info {
+            flex: 1;
+        }
+
+        .shop-card-title {
+            font-weight: 800;
+            font-size: 13px;
+            color: var(--text-main);
+        }
+
+        .shop-card-effect {
+            font-size: 11px;
+            color: var(--cyan);
+            margin: 2px 0;
+        }
+
+        .shop-card-price {
+            font-size: 11px;
+            font-weight: 800;
+            color: var(--gold);
+        }
+
+        .btn-purchase {
+            background: linear-gradient(135deg, #00b4db, #0083b0);
+            color: #fff;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-weight: 800;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        .btn-purchase:disabled {
+            background: #241f3d;
+            color: #554d73;
+            cursor: not-allowed;
+        }
+
+        .casino-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .casino-box {
+            background: var(--card-bg);
+            border: 1px solid var(--gold);
+            border-radius: 10px;
+            padding: 14px;
+            text-align: center;
+        }
+
+        .slots-window {
+            font-size: 32px;
+            letter-spacing: 8px;
+            margin: 10px 0;
+            background: rgba(0,0,0,0.5);
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px dashed var(--gold);
+        }
+
+        .action-btn {
+            background: linear-gradient(135deg, var(--pink), #7928ca);
+            color: #fff;
+            border: none;
+            padding: 10px;
+            font-weight: 900;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 13px;
+        }
+
+        /* МОДАЛЬНОЕ ОКНО */
+        .modal-bg {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.85);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 300;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: var(--panel-bg);
+            border: 2px solid var(--gold);
+            border-radius: 12px;
+            padding: 18px;
+            text-align: center;
+            max-width: 300px;
+            width: 100%;
+        }
+
+        .toast-msg {
+            position: fixed;
+            bottom: 55px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--green);
+            color: #000;
+            padding: 6px 14px;
+            border-radius: 16px;
+            font-weight: 800;
+            font-size: 11px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.25s ease;
+            z-index: 150;
+        }
+
+        .toast-msg.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ВЕРХНЯЯ СТАТИСТИКА -->
+    <div class="header-stats">
+        <div class="balance-box">
+            <div class="world-badge-top" id="valWorldTitle">🌍 МИР: МОСКВА-СИТИ (x1.0)</div>
+            <div class="balance-value" id="valMoney">0 ₽</div>
+            <div class="pps-value">Пассивный доход: +<span id="valPps">0</span> ₽/сек</div>
+        </div>
+        <div class="stats-row">
+            <div class="stat-card">
+                <span class="lbl">⚡ ЭНЕРГИЯ</span>
+                <span class="val" id="valEnergy">100/100</span>
+            </div>
+            <div class="stat-card">
+                <span class="lbl">👆 ТАП</span>
+                <span class="val" id="valClickPower">1 ₽</span>
+            </div>
+            <div class="stat-card">
+                <span class="lbl">🔄 ПРЕСТИЖ</span>
+                <span class="val" id="valRebirths">0</span>
+            </div>
+        </div>
+        <div class="energy-outer">
+            <div class="energy-inner" id="energyFill"></div>
+        </div>
+    </div>
+
+    <!-- КЛИКЕР С АВАТАРКОЙ МЕЛЛСТРОЯ -->
+    <div class="click-section" id="clickZone">
+        <button class="ad-btn" onclick="triggerRewardedAd()">🎬 Смотреть рекламу (+100% Энергия & ₽)</button>
+        
+        <div class="character-wrapper" id="btnTap">
+            <img src="https://avatars.mds.yandex.net/i?id=b56a1656839e551e16f3875503dd1974_sr-5232306-images-thumbs&n=13" 
+                 alt="Mellstroy" 
+                 id="mainAvatarImg"
+                 class="character-img"
+                 onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed=Mellstroy'">
+            <div class="combo-badge" id="valCombo">Комбо: x1.0</div>
+        </div>
+    </div>
+
+    <!-- ТАБЫ НАВИГАЦИИ -->
+    <div class="tabs-header">
+        <button class="tab-btn active" onclick="switchTab('worlds')">🌍 Миры</button>
+        <button class="tab-btn" onclick="switchTab('taps')">👆 Клики</button>
+        <button class="tab-btn" onclick="switchTab('businesses')">🏢 Бизнес</button>
+        <button class="tab-btn" onclick="switchTab('luxury')">🏎️ Роскошь</button>
+        <button class="tab-btn" onclick="switchTab('boosters')">🚀 Бусты</button>
+        <button class="tab-btn" onclick="switchTab('casino')">🎰 Казино</button>
+        <button class="tab-btn" onclick="switchTab('rebirth')">🔄 Престиж</button>
+        <button class="tab-btn" onclick="switchTab('achievements')">🏆 Ачивки</button>
+    </div>
+
+    <!-- СОДЕРЖИМОЕ ВКЛАДОК -->
+    <div class="content-panel">
+        <div class="tab-content active" id="pane-worlds"></div>
+        <div class="tab-content" id="pane-taps"></div>
+        <div class="tab-content" id="pane-businesses"></div>
+        <div class="tab-content" id="pane-luxury"></div>
+        <div class="tab-content" id="pane-boosters"></div>
+
+        <!-- КАЗИНО -->
+        <div class="tab-content" id="pane-casino">
+            <div class="casino-grid">
+                <div class="casino-box">
+                    <h3>🎰 Однорукий Бандит</h3>
+                    <div class="slots-window" id="slotsUi">🎰 | 🎰 | 🎰</div>
+                    <button class="action-btn" onclick="spinSlots()">Крутить за 5,000 ₽</button>
+                </div>
+                <div class="casino-box">
+                    <h3>🪙 Бросок Монеты (50/50)</h3>
+                    <p style="font-size: 11px; color: var(--text-muted); margin: 6px 0 10px;">Удвой ставку или потеряй всё!</p>
+                    <button class="action-btn" style="background: linear-gradient(135deg, #00b4db, #0083b0);" onclick="flipCoin()">Поставить 10,000 ₽</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ПРЕСТИЖ -->
+        <div class="tab-content" id="pane-rebirth">
+            <div class="casino-box">
+                <h3>🔄 Сброс Прогресса (Престиж)</h3>
+                <p style="font-size: 11px; color: var(--text-muted); margin: 10px 0;">
+                    Сбрось прогресс и получи вечный множитель **+100% ко всему доходу** за каждый уровень престижа!
+                </p>
+                <p style="font-size: 12px; color: var(--gold); font-weight: 800; margin-bottom: 10px;">Цена: 10,000,000 ₽</p>
+                <button class="action-btn" style="background: linear-gradient(135deg, #ff8c00, #e52d27);" onclick="doRebirth()">Сделать Перерождение</button>
+            </div>
+        </div>
+
+        <!-- АЧИВКИ -->
+        <div class="tab-content" id="pane-achievements"></div>
+    </div>
+
+    <!-- МОДАЛКА ОФЛАЙН ДОХОДА -->
+    <div class="modal-bg" id="offlineModal">
+        <div class="modal-content">
+            <h3 style="color: var(--gold); margin-bottom: 6px;">💤 С возвращением!</h3>
+            <p id="offlineText" style="font-size: 11px; color: var(--text-muted); margin-bottom: 14px;"></p>
+            <button class="action-btn" onclick="closeOfflineModal()">Забрать куш</button>
+        </div>
+    </div>
+
+    <div class="toast-msg" id="toast">Сохранено!</div>
+
+    <script>
+        // --- АУДИО ДВИЖОК (WEB AUDIO API) ---
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+
+        function playSound(type) {
+            try {
+                if (!audioCtx) audioCtx = new AudioContext();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                let now = audioCtx.currentTime;
+
+                if (type === 'tap') {
+                    osc.frequency.setValueAtTime(420, now);
+                    osc.frequency.exponentialRampToValueAtTime(840, now + 0.03);
+                    gain.gain.setValueAtTime(0.06, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.03);
+                    osc.start(now);
+                    osc.stop(now + 0.03);
+                } else if (type === 'buy') {
+                    osc.frequency.setValueAtTime(320, now);
+                    osc.frequency.exponentialRampToValueAtTime(640, now + 0.08);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+                    osc.start(now);
+                    osc.stop(now + 0.08);
+                } else if (type === 'win') {
+                    osc.frequency.setValueAtTime(523, now);
+                    osc.frequency.setValueAtTime(659, now + 0.07);
+                    osc.frequency.setValueAtTime(783, now + 0.14);
+                    gain.gain.setValueAtTime(0.12, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.22);
+                    osc.start(now);
+                    osc.stop(now + 0.22);
+                }
+            } catch(e) {}
+        }
+
+        // --- СОСТОЯНИЕ ИГРЫ ---
+        let state = {
+            money: 0,
+            clickPower: 1,
+            pps: 0,
+            energy: 100,
+            maxEnergy: 100,
+            rebirths: 0,
+            totalClicks: 0,
+            currentWorld: 0,
+            unlockedWorlds: [0],
+            owned: {},
+            lastSaveTime: Date.now()
+        };
+
+        let combo = 1.0;
+        let comboTimer = null;
+        const PRICE_MULTIPLIER = 1.28;
+
+        // --- БАЗА ДАННЫХ МИРОВ И ПРЕДМЕТОВ ---
+        const DB = {
+            worlds: [
+                {
+                    id: 0,
+                    name: 'Москва-Сити',
+                    themeClass: '',
+                    price: 0,
+                    mult: 1.0,
+                    icon: '🌃',
+                    img: 'https://avatars.mds.yandex.net/i?id=b56a1656839e551e16f3875503dd1974_sr-5232306-images-thumbs&n=13',
+                    desc: 'Старт карьеры стримера. Неоновые башни и первые донаты.'
+                },
+                {
+                    id: 1,
+                    name: 'Дубай Найтс',
+                    themeClass: 'theme-dubai',
+                    price: 5000000,
+                    mult: 2.5,
+                    icon: '🕌',
+                    img: 'https://avatars.mds.yandex.net/i?id=9a2637bf60d83151aa09886470aa0065_sr-5288506-images-thumbs&n=13',
+                    desc: 'Золотые пентхаусы, шейхи, суперкары и бешеный доход.'
+                },
+                {
+                    id: 2,
+                    name: 'Вайс Майами',
+                    themeClass: 'theme-miami',
+                    price: 100000000,
+                    mult: 10.0,
+                    icon: '🌴',
+                    img: 'https://avatars.mds.yandex.net/i?id=9e0e5a88295a6ee980b1e42dd744bc40_sr-5221976-images-thumbs&n=13',
+                    desc: 'Закаты, мега-яхты, бесконечные вечеринки и виллы на побережье.'
+                },
+                {
+                    id: 3,
+                    name: 'Марсианский Синдикат',
+                    themeClass: 'theme-mars',
+                    price: 5000000000,
+                    mult: 50.0,
+                    icon: '🚀',
+                    img: 'https://avatars.mds.yandex.net/i?id=1418efae4d4f8ff4b09e03d368b6a38f_sr-5234586-images-thumbs&n=13',
+                    desc: 'Межгалактическая империя Мелла. Захват красной планеты.'
+                }
+            ],
+            taps: [
+                { id: 't1', icon: '👆', name: 'Палец Мелла', power: 1, price: 25 },
+                { id: 't2', icon: '📱', name: 'Второй Тачскрин', power: 5, price: 120 },
+                { id: 't3', icon: '⚡', name: 'Автокликер', power: 20, price: 500 },
+                { id: 't4', icon: '🥊', name: 'Тяжёлый Удар', power: 75, price: 2200 },
+                { id: 't5', icon: '🔥', name: 'Пламенный Клик', power: 250, price: 9000 },
+                { id: 't6', icon: '💎', name: 'Алмазный Напалечник', power: 900, price: 38000 },
+                { id: 't7', icon: '🤖', name: 'Нейро-Палец', power: 3200, price: 160000 },
+                { id: 't8', icon: '🚀', name: 'Реактивный Тап', power: 12000, price: 700000 },
+                { id: 't9', icon: '🌌', name: 'Квантовый Тап', power: 45000, price: 3000000 },
+                { id: 't10', icon: '👑', name: 'Императорский Клик', power: 180000, price: 14000000 },
+                { id: 't11', icon: '🪐', name: 'Грави-Тап', power: 750000, price: 65000000 },
+                { id: 't12', icon: '⚡', name: 'Бесконечный Тап', power: 3500000, price: 300000000 }
+            ],
+            businesses: [
+                { id: 'b1', icon: '🥙', name: 'Шаурмичная', pps: 2, price: 80 },
+                { id: 'b2', icon: '🎮', name: 'Компьютерный Клуб', pps: 12, price: 450 },
+                { id: 'b3', icon: '📹', name: 'Стрим-Хаус', pps: 50, price: 2200 },
+                { id: 'b4', icon: '🍾', name: 'Ночной Клуб', pps: 220, price: 11000 },
+                { id: 'b5', icon: '🚗', name: 'Автосалон', pps: 1000, price: 55000 },
+                { id: 'b6', icon: '⛏️', name: 'Майнинг-Ферма', pps: 4500, price: 280000 },
+                { id: 'b7', icon: '🏨', name: 'Отель в Дубае', pps: 20000, price: 1400000 },
+                { id: 'b8', icon: '🌐', name: 'Медиахолдинг', pps: 90000, price: 7500000 },
+                { id: 'b9', icon: '🎰', name: 'Сеть Казино', pps: 400000, price: 38000000 },
+                { id: 'b10', icon: '🚀', name: 'Космодром', pps: 1800000, price: 180000000 },
+                { id: 'b11', icon: '🧬', name: 'Генетика Мелла', pps: 8500000, price: 900000000 },
+                { id: 'b12', icon: '🪐', name: 'База на Марсе', pps: 40000000, price: 4500000000 }
+            ],
+            luxury: [
+                { id: 'l1', icon: '🚗', name: 'ВАЗ 2114', pps: 6, price: 800 },
+                { id: 'l2', icon: '📱', name: 'iPhone Pro Max', pps: 30, price: 3500 },
+                { id: 'l3', icon: '⌚', name: 'Золотые Rolex', pps: 140, price: 18000 },
+                { id: 'l4', icon: '🏎️', name: 'BMW M5 F90', pps: 700, price: 95000 },
+                { id: 'l5', icon: '🚙', name: 'Geländewagen', pps: 3200, price: 420000 },
+                { id: 'l6', icon: '💎', name: 'Цепь с Бриллиантами', pps: 14000, price: 2200000 },
+                { id: 'l7', icon: '🏎️', name: 'Bugatti Chiron', pps: 70000, price: 12000000 },
+                { id: 'l8', icon: '🚁', name: 'Личный Вертолёт', pps: 300000, price: 50000000 },
+                { id: 'l9', icon: '🛥️', name: 'Мега-Яхта', pps: 1300000, price: 250000000 },
+                { id: 'l10', icon: '🛩️', name: 'Бизнес-Джет', pps: 6000000, price: 1200000000 },
+                { id: 'l11', icon: '🏝️', name: 'Остров в Океане', pps: 26000000, price: 6000000000 },
+                { id: 'l12', icon: '🛰️', name: 'Орбитальная Станция', pps: 120000000, price: 35000000000 }
+            ],
+            boosters: [
+                { id: 'e1', icon: '🔋', name: 'Зарядник +50', maxE: 50, price: 500 },
+                { id: 'e2', icon: '⚡', name: 'Супер-Блок +250', maxE: 250, price: 4000 },
+                { id: 'e3', icon: '💥', name: 'Ядерный Пакуй +1000', maxE: 1000, price: 35000 }
+            ],
+            achievements: [
+                { id: 'a1', name: 'Старт Пути', desc: 'Сделать 1 клик', target: 1, type: 'clicks', reward: 150 },
+                { id: 'a2', name: 'Опытный Тапер', desc: 'Сделать 100 кликов', target: 100, type: 'clicks', reward: 3000 },
+                { id: 'a3', name: 'Монстр Кликов', desc: 'Сделать 1,000 кликов', target: 1000, type: 'clicks', reward: 40000 },
+                { id: 'a4', name: 'Первый Кэш', desc: 'Накопить 10,000 ₽', target: 10000, type: 'money', reward: 8000 },
+                { id: 'a5', name: 'Миллионер Синдиката', desc: 'Накопить 1,000,000 ₽', target: 1000000, type: 'money', reward: 250000 }
+            ]
+        };
+
+        // --- ИНИЦИАЛИЗАЦИЯ YANDEX SDK ---
+        let ysdk = null;
+        if (typeof YaGames !== 'undefined') {
+            YaGames.init().then(_ysdk => {
+                ysdk = _ysdk;
+                loadProgressYandex();
+            }).catch(console.error);
+        }
+
+        function triggerRewardedAd() {
+            if (ysdk) {
+                ysdk.adv.showRewardedVideo({
+                    callbacks: { onRewarded: () => applyAdBonus() }
+                });
+            } else {
+                applyAdBonus();
+            }
+        }
+
+        function applyAdBonus() {
+            state.energy = state.maxEnergy;
+            let currentWorldObj = DB.worlds[state.currentWorld] || DB.worlds[0];
+            let bonusMoney = ((state.pps * 90) + 15000) * currentWorldObj.mult;
+            state.money += bonusMoney;
+            playSound('win');
+            showToast(`🚀 Награда: Энергия 100% + ${Math.floor(bonusMoney).toLocaleString()} ₽!`);
+            updateUI();
+        }
+
+        // --- КЛИКЕР ---
+        const btnTap = document.getElementById('btnTap');
+        const clickZone = document.getElementById('clickZone');
+
+        btnTap.addEventListener('click', (e) => {
+            if (state.energy > 0) {
+                combo = Math.min(2.5, combo + 0.04);
+                clearTimeout(comboTimer);
+                comboTimer = setTimeout(() => { combo = 1.0; updateUI(); }, 1000);
+
+                let worldMult = DB.worlds[state.currentWorld] ? DB.worlds[state.currentWorld].mult : 1.0;
+                let multiplier = (1 + state.rebirths) * combo * worldMult;
+                let earned = Math.floor(state.clickPower * multiplier);
+
+                state.money += earned;
+                state.energy--;
+                state.totalClicks++;
+
+                playSound('tap');
+                createFloatingText(e.clientX, e.clientY, `+${earned} ₽`);
+                updateUI();
+            } else {
+                showToast('⚡ Нет энергии!');
+            }
+        });
+
+        function createFloatingText(x, y, text) {
+            const el = document.createElement('div');
+            el.className = 'floating-num';
+            el.innerText = text;
+            const rect = clickZone.getBoundingClientRect();
+            el.style.left = (x - rect.left - 20) + 'px';
+            el.style.top = (y - rect.top - 20) + 'px';
+            clickZone.appendChild(el);
+            setTimeout(() => el.remove(), 750);
+        }
+
+        // --- МИРЫ И ЛОКАЦИИ ---
+        function selectWorld(worldId) {
+            if (state.unlockedWorlds.includes(worldId)) {
+                state.currentWorld = worldId;
+                applyWorldTheme();
+                playSound('win');
+                showToast(`🌍 Мир изменён: ${DB.worlds[worldId].name}`);
+                updateUI();
+            } else {
+                let w = DB.worlds[worldId];
+                if (state.money >= w.price) {
+                    state.money -= w.price;
+                    state.unlockedWorlds.push(worldId);
+                    state.currentWorld = worldId;
+                    applyWorldTheme();
+                    playSound('win');
+                    showToast(`🎉 Разблокирован мир: ${w.name}!`);
+                    updateUI();
+                } else {
+                    showToast(`Нужно ${w.price.toLocaleString()} ₽!`);
+                }
+            }
+        }
+
+        function applyWorldTheme() {
+            let w = DB.worlds[state.currentWorld] || DB.worlds[0];
+            document.body.className = w.themeClass;
+            const imgEl = document.getElementById('mainAvatarImg');
+            if (imgEl && w.img) {
+                imgEl.src = w.img;
+            }
+        }
+
+        function renderWorlds() {
+            const container = document.getElementById('pane-worlds');
+            container.innerHTML = '';
+
+            DB.worlds.forEach(w => {
+                let isUnlocked = state.unlockedWorlds.includes(w.id);
+                let isActive = state.currentWorld === w.id;
+
+                let btnText = isActive ? 'Активен' : (isUnlocked ? 'Войти' : 'Открыть');
+
+                container.innerHTML += `
+                    <div class="shop-card" style="border-color: ${isActive ? 'var(--gold)' : 'var(--border-color)'}">
+                        <div class="shop-card-icon" style="font-size: 24px;">${w.icon}</div>
+                        <div class="shop-card-info">
+                            <div class="shop-card-title">${w.name} (x${w.mult} Доход)</div>
+                            <div class="shop-card-effect">${w.desc}</div>
+                            <div class="shop-card-price">${isUnlocked ? 'Разблокировано' : w.price.toLocaleString() + ' ₽'}</div>
+                        </div>
+                        <button class="btn-purchase" 
+                                style="${isActive ? 'background: var(--green); color: #000;' : ''}"
+                                ${(!isUnlocked && state.money < w.price) ? 'disabled' : ''} 
+                                onclick="selectWorld(${w.id})">
+                            ${btnText}
+                        </button>
+                    </div>
+                `;
+            });
+        }
+
+        // --- ПОКУПКИ В МАГАЗИНАХ ---
+        function buyItem(category, id) {
+            let item = DB[category].find(x => x.id === id);
+            let count = state.owned[id] || 0;
+            let currentPrice = Math.floor(item.price * Math.pow(PRICE_MULTIPLIER, count));
+
+            if (state.money >= currentPrice) {
+                state.money -= currentPrice;
+                state.owned[id] = count + 1;
+
+                if (item.power) state.clickPower += item.power;
+                if (item.pps) state.pps += item.pps;
+                if (item.maxE) state.maxEnergy += item.maxE;
+
+                playSound('buy');
+                showToast(`Куплено: ${item.name}`);
+                renderAllShops();
+                updateUI();
+            }
+        }
+
+        // --- КАЗИНО ---
+        function spinSlots() {
+            const cost = 5000;
+            if (state.money >= cost) {
+                state.money -= cost;
+                const icons = ['🍋', '7️⃣', '💎', '👑', '🔥'];
+                const a = icons[Math.floor(Math.random() * icons.length)];
+                const b = icons[Math.floor(Math.random() * icons.length)];
+                const c = icons[Math.floor(Math.random() * icons.length)];
+
+                document.getElementById('slotsUi').innerText = `${a} | ${b} | ${c}`;
+
+                if (a === b && b === c) {
+                    let win = 150000;
+                    state.money += win;
+                    playSound('win');
+                    showToast(`🔥 ДЖЕКПОТ! +${win.toLocaleString()} ₽!`);
+                } else if (a === b || b === c || a === c) {
+                    let win = 12000;
+                    state.money += win;
+                    playSound('win');
+                    showToast(`✨ Выигрыш: +${win.toLocaleString()} ₽`);
+                } else {
+                    showToast('❌ Мимо!');
+                }
+                updateUI();
+            } else {
+                showToast('Нужно 5,000 ₽!');
+            }
+        }
+
+        function flipCoin() {
+            const bet = 10000;
+            if (state.money >= bet) {
+                state.money -= bet;
+                if (Math.random() > 0.5) {
+                    state.money += bet * 2;
+                    playSound('win');
+                    showToast('🎉 Победа! Удвоение!');
+                } else {
+                    showToast('❌ Проигрыш!');
+                }
+                updateUI();
+            } else {
+                showToast('Нужно 10,000 ₽!');
+            }
+        }
+
+        function doRebirth() {
+            if (state.money >= 10000000) {
+                state.rebirths++;
+                state.money = 0;
+                state.clickPower = 1;
+                state.pps = 0;
+                state.owned = {};
+                playSound('win');
+                showToast('🔄 Перерождение выполнено!');
+                renderAllShops();
+                updateUI();
+            } else {
+                showToast('Нужно 10,000,000 ₽!');
+            }
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(l => l.classList.remove('active'));
+
+            document.getElementById(`pane-${tabId}`).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function renderShopCategory(containerId, category) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+
+            DB[category].forEach(item => {
+                let count = state.owned[item.id] || 0;
+                let currentPrice = Math.floor(item.price * Math.pow(PRICE_MULTIPLIER, count));
+
+                let effectText = item.power ? `+${item.power.toLocaleString()} к клику` :
+                                 item.pps ? `+${item.pps.toLocaleString()} ₽/сек` : `+${item.maxE} Энергии`;
+
+                container.innerHTML += `
+                    <div class="shop-card">
+                        <div class="shop-card-icon">${item.icon || '📦'}</div>
+                        <div class="shop-card-info">
+                            <div class="shop-card-title">${item.name} (${count})</div>
+                            <div class="shop-card-effect">${effectText}</div>
+                            <div class="shop-card-price">${currentPrice.toLocaleString()} ₽</div>
+                        </div>
+                        <button class="btn-purchase" ${state.money < currentPrice ? 'disabled' : ''} 
+                                onclick="buyItem('${category}', '${item.id}')">
+                            Купить
+                        </button>
+                    </div>
+                `;
+            });
+        }
+
+        function renderAchievements() {
+            const container = document.getElementById('pane-achievements');
+            container.innerHTML = '';
+
+            DB.achievements.forEach(ach => {
+                let done = false;
+                if (ach.type === 'clicks' && state.totalClicks >= ach.target) done = true;
+                if (ach.type === 'money' && state.money >= ach.target) done = true;
+
+                container.innerHTML += `
+                    <div class="shop-card" style="opacity: ${done ? '1' : '0.4'}">
+                        <div class="shop-card-icon">${done ? '✅' : '🔒'}</div>
+                        <div class="shop-card-info">
+                            <div class="shop-card-title">${ach.name}</div>
+                            <div class="shop-card-effect">${ach.desc}</div>
+                            <div class="shop-card-price">Награда: +${ach.reward.toLocaleString()} ₽</div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function renderAllShops() {
+            renderWorlds();
+            renderShopCategory('pane-taps', 'taps');
+            renderShopCategory('pane-businesses', 'businesses');
+            renderShopCategory('pane-luxury', 'luxury');
+            renderShopCategory('pane-boosters', 'boosters');
+            renderAchievements();
+        }
+
+        function updateUI() {
+            let worldObj = DB.worlds[state.currentWorld] || DB.worlds[0];
+            let worldMult = worldObj.mult;
+            let mult = (1 + state.rebirths) * combo * worldMult;
+
+            document.getElementById('valWorldTitle').innerText = `🌍 МИР: ${worldObj.name.toUpperCase()} (x${worldMult})`;
+            document.getElementById('valMoney').innerText = Math.floor(state.money).toLocaleString() + ' ₽';
+            document.getElementById('valPps').innerText = Math.floor(state.pps * (1 + state.rebirths) * worldMult).toLocaleString();
+            document.getElementById('valClickPower').innerText = Math.floor(state.clickPower * mult).toLocaleString() + ' ₽';
+            document.getElementById('valEnergy').innerText = `${state.energy}/${state.maxEnergy}`;
+            document.getElementById('valRebirths').innerText = state.rebirths;
+            document.getElementById('valCombo').innerText = `Комбо: x${combo.toFixed(1)}`;
+
+            let energyPct = (state.energy / state.maxEnergy) * 100;
+            document.getElementById('energyFill').style.width = `${energyPct}%`;
+
+            renderAllShops();
+        }
+
+        function showToast(text) {
+            const toast = document.getElementById('toast');
+            toast.innerText = text;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 1800);
+        }
+
+        function saveProgress() {
+            state.lastSaveTime = Date.now();
+            localStorage.setItem('mells_game_save', JSON.stringify(state));
+            if (ysdk && ysdk.getPlayer) {
+                ysdk.getPlayer().then(player => {
+                    player.setData({ gameData: JSON.stringify(state) });
+                });
+            }
+        }
+
+        function loadProgressLocal() {
+            let data = localStorage.getItem('mells_game_save');
+            if (data) {
+                state = Object.assign(state, JSON.parse(data));
+                if (!state.unlockedWorlds) state.unlockedWorlds = [0];
+                if (state.currentWorld === undefined) state.currentWorld = 0;
+                calculateOfflineIncome();
+            }
+        }
+
+        function loadProgressYandex() {
+            if (ysdk) {
+                ysdk.getPlayer().then(player => {
+                    player.getData().then(data => {
+                        if (data && data.gameData) {
+                            state = Object.assign(state, JSON.parse(data.gameData));
+                            if (!state.unlockedWorlds) state.unlockedWorlds = [0];
+                            if (state.currentWorld === undefined) state.currentWorld = 0;
+                            calculateOfflineIncome();
+                            applyWorldTheme();
+                            updateUI();
+                        }
+                    });
+                });
+            }
+        }
+
+        function calculateOfflineIncome() {
+            let now = Date.now();
+            let diffSec = Math.floor((now - (state.lastSaveTime || now)) / 1000);
+            if (diffSec > 15 && state.pps > 0) {
+                let worldMult = DB.worlds[state.currentWorld] ? DB.worlds[state.currentWorld].mult : 1.0;
+                let offlineEarned = Math.floor(diffSec * state.pps * 0.4 * (1 + state.rebirths) * worldMult);
+                state.money += offlineEarned;
+                document.getElementById('offlineText').innerText = `Пока тебя не было (${Math.floor(diffSec/60)} мин.), твой Синдикат заработал: +${offlineEarned.toLocaleString()} ₽!`;
+                document.getElementById('offlineModal').style.display = 'flex';
+            }
+        }
+
+        function closeOfflineModal() {
+            document.getElementById('offlineModal').style.display = 'none';
+        }
+
+        // ТАЙМЕР ПАССИВНОГО ДОХОДА И ЭНЕРГИИ
+        let energyTicks = 0;
+        setInterval(() => {
+            let worldMult = DB.worlds[state.currentWorld] ? DB.worlds[state.currentWorld].mult : 1.0;
+            let mult = (1 + state.rebirths) * worldMult;
+            state.money += (state.pps * mult);
+
+            energyTicks++;
+            if (energyTicks >= 2) {
+                if (state.energy < state.maxEnergy) {
+                    state.energy = Math.min(state.maxEnergy, state.energy + 1);
+                }
+                energyTicks = 0;
+            }
+
+            updateUI();
+        }, 1000);
+
+        // АВТОСОХРАНЕНИЕ КАЖДЫЕ 10 СЕКУНД
+        setInterval(() => {
+            saveProgress();
+        }, 10000);
+
+        loadProgressLocal();
+        applyWorldTheme();
+        renderAllShops();
+        updateUI();
+    </script>
+</body>
+</html> 
