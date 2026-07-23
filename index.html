@@ -1,0 +1,1314 @@
+ <!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultimate World Clicker Deluxe</title>
+    <style>
+        :root {
+            --bg-main: #0a0c10;
+            --bg-card: #121620;
+            --bg-card-hover: #1a202c;
+            --accent: #00ff88;
+            --accent-glow: rgba(0, 255, 136, 0.4);
+            --text-main: #ffffff;
+            --text-sub: #8a99ad;
+            --border-color: #1f2937;
+            --world-bg-img: none;
+            --button-bg: linear-gradient(135deg, #00ff88, #00b359);
+        }
+
+        /* МИР 1: Кибер Неон */
+        [data-world="1"] {
+            --bg-main: #080b14;
+            --bg-card: #111726;
+            --bg-card-hover: #192238;
+            --accent: #00e5ff;
+            --accent-glow: rgba(0, 229, 255, 0.5);
+            --button-bg: linear-gradient(135deg, #00e5ff, #0088cc);
+        }
+
+        /* МИР 2: Тёмный Пупур */
+        [data-world="2"] {
+            --bg-main: #0c0514;
+            --bg-card: #180a29;
+            --bg-card-hover: #240f3d;
+            --accent: #bd00ff;
+            --accent-glow: rgba(189, 0, 255, 0.5);
+            --button-bg: linear-gradient(135deg, #bd00ff, #7a00cc);
+        }
+
+        /* МИР 3: Плазменный Огонь */
+        [data-world="3"] {
+            --bg-main: #140600;
+            --bg-card: #260d02;
+            --bg-card-hover: #381403;
+            --accent: #ff5500;
+            --accent-glow: rgba(255, 85, 0, 0.5);
+            --button-bg: linear-gradient(135deg, #ff5500, #cc2200);
+        }
+
+        /* МИР 4: Золотой Закат (Арт 1) */
+        [data-world="4"] {
+            --bg-main: #120e04;
+            --bg-card: rgba(36, 26, 8, 0.85);
+            --bg-card-hover: rgba(54, 39, 12, 0.9);
+            --accent: #ffb700;
+            --accent-glow: rgba(255, 183, 0, 0.6);
+            --world-bg-img: url('https://cdn.phototourl.com/free/2026-07-23-436b98cd-465d-44ec-ac77-7154a380a028.jpg');
+            --button-bg: linear-gradient(135deg, #ffb700, #cc8800);
+        }
+
+        /* МИР 5: Космическая Абстракция (Арт 2) */
+        [data-world="5"] {
+            --bg-main: #0a0314;
+            --bg-card: rgba(23, 7, 43, 0.85);
+            --bg-card-hover: rgba(38, 11, 71, 0.9);
+            --accent: #ff0055;
+            --accent-glow: rgba(255, 0, 85, 0.6);
+            --world-bg-img: url('https://cdn.phototourl.com/free/2026-07-23-3c7d4c73-f3ef-4cf0-980a-bd96c4e62672.jpg');
+            --button-bg: linear-gradient(135deg, #ff0055, #990033);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            background-image: var(--world-bg-img);
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: background 0.5s ease;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(10, 12, 16, 0.75);
+            z-index: -1;
+            backdrop-filter: blur(4px);
+        }
+
+        /* Вспышка Портала переключения мира */
+        #portal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: radial-gradient(circle, #fff 10%, var(--accent) 60%, #000 100%);
+            opacity: 0;
+            pointer-events: none;
+            z-index: 99999;
+            transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        #portal-overlay.active {
+            opacity: 1;
+        }
+
+        /* Шапка */
+        header {
+            background: rgba(15, 20, 30, 0.9);
+            backdrop-filter: blur(12px);
+            border-bottom: 2px solid var(--accent);
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+
+        .stats-group {
+            display: flex;
+            gap: 25px;
+            align-items: center;
+        }
+
+        .stat-box {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: var(--text-sub);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 700;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--accent);
+            text-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        .prestige-badge {
+            background: linear-gradient(135deg, #ff0055, #bd00ff);
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-weight: 800;
+            font-size: 14px;
+            color: #fff;
+            box-shadow: 0 0 15px rgba(189, 0, 255, 0.6);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            animation: pulse-prestige 2s infinite alternate;
+        }
+
+        @keyframes pulse-prestige {
+            0% { box-shadow: 0 0 10px rgba(189, 0, 255, 0.4); transform: scale(1); }
+            100% { box-shadow: 0 0 22px rgba(255, 0, 85, 0.8); transform: scale(1.03); }
+        }
+
+        /* Навигация */
+        nav {
+            display: flex;
+            background: rgba(18, 22, 32, 0.95);
+            border-bottom: 1px solid var(--border-color);
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+        nav::-webkit-scrollbar { display: none; }
+
+        nav button {
+            flex: 1;
+            min-width: 110px;
+            padding: 14px 10px;
+            background: transparent;
+            border: none;
+            color: var(--text-sub);
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+            border-bottom: 3px solid transparent;
+        }
+
+        nav button.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+            background: rgba(255, 255, 255, 0.04);
+            text-shadow: 0 0 8px var(--accent-glow);
+        }
+
+        main {
+            max-width: 1000px;
+            margin: 20px auto;
+            width: 95%;
+            flex: 1;
+            padding-bottom: 40px;
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Главный Кликер */
+        .clicker-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 25px;
+            margin-top: 10px;
+        }
+
+        .clicker-btn-wrapper {
+            position: relative;
+            padding: 20px;
+        }
+
+        .main-click-btn {
+            width: 240px;
+            height: 240px;
+            border-radius: 50%;
+            background: radial-gradient(circle, var(--accent) 0%, rgba(10,12,16,0.8) 100%);
+            border: 6px solid var(--accent);
+            box-shadow: 0 0 40px var(--accent-glow), inset 0 0 20px rgba(255,255,255,0.3);
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 70px;
+            transition: transform 0.05s ease, box-shadow 0.2s;
+            outline: none;
+            position: relative;
+        }
+
+        .main-click-btn:active {
+            transform: scale(0.92);
+        }
+
+        .main-click-btn.boosted {
+            animation: btn-boost-glow 0.6s infinite alternate;
+        }
+
+        @keyframes btn-boost-glow {
+            0% { box-shadow: 0 0 30px #ff5500, inset 0 0 20px #ffbb00; }
+            100% { box-shadow: 0 0 70px #ff0055, inset 0 0 40px #ffea00; }
+        }
+
+        /* Панель Форсажа */
+        .boost-card {
+            width: 100%;
+            background: var(--bg-card);
+            border: 2px solid var(--border-color);
+            border-radius: 16px;
+            padding: 18px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+        }
+
+        .btn-boost-trigger {
+            background: linear-gradient(135deg, #ff6600, #ff0055);
+            border: none;
+            padding: 14px 28px;
+            border-radius: 10px;
+            color: #fff;
+            font-weight: 800;
+            font-size: 15px;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(255, 102, 0, 0.5);
+            transition: all 0.2s;
+        }
+
+        .btn-boost-trigger:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 0 30px rgba(255, 102, 0, 0.8);
+        }
+
+        .btn-boost-trigger:disabled {
+            background: #2d3748;
+            color: #718096;
+            box-shadow: none;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Сетка Карточек */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            margin-top: 15px;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 12px;
+            transition: all 0.2s;
+        }
+
+        .card:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .card-sub {
+            font-size: 12px;
+            color: var(--text-sub);
+            margin-top: 4px;
+        }
+
+        .btn-buy {
+            background: var(--button-bg);
+            color: #000;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: 800;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+        }
+
+        .btn-buy:hover:not(:disabled) {
+            filter: brightness(1.15);
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        .btn-buy:disabled {
+            background: #2a3241;
+            color: #5a6578;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        /* Рулетка Кейсов */
+        .roulette-container {
+            position: relative;
+            width: 100%;
+            height: 140px;
+            background: #090c14;
+            border: 3px solid var(--accent);
+            border-radius: 16px;
+            overflow: hidden;
+            margin: 20px 0;
+            box-shadow: 0 0 25px var(--accent-glow);
+        }
+
+        .roulette-marker {
+            position: absolute;
+            top: 0; bottom: 0; left: 50%;
+            width: 4px;
+            background: #ff0055;
+            z-index: 20;
+            transform: translateX(-50%);
+            box-shadow: 0 0 12px #ff0055, 0 0 20px #ff0055;
+        }
+
+        .roulette-track {
+            display: flex;
+            position: absolute;
+            left: 0;
+            top: 15px;
+            height: 110px;
+            will-change: transform;
+        }
+
+        .roulette-card {
+            width: 110px;
+            height: 110px;
+            margin: 0 6px;
+            background: #151c2c;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 12px;
+            font-weight: 700;
+            border: 3px solid #2d3748;
+            text-align: center;
+            padding: 8px;
+            gap: 6px;
+        }
+
+        .rarity-common { border-color: #a0aec0; color: #e2e8f0; }
+        .rarity-rare { border-color: #3182ce; color: #63b3ed; box-shadow: inset 0 0 10px rgba(49,130,206,0.3); }
+        .rarity-epic { border-color: #805ad5; color: #b794f4; box-shadow: inset 0 0 15px rgba(128,90,213,0.4); }
+        .rarity-legendary { border-color: #d69e2e; color: #faf089; box-shadow: inset 0 0 20px rgba(214,158,46,0.5); }
+        .rarity-mythic { border-color: #e53e3e; color: #feb2b2; box-shadow: inset 0 0 25px rgba(229,62,62,0.6); }
+
+        /* Казино */
+        .casino-panel {
+            background: var(--bg-card);
+            border: 2px solid var(--border-color);
+            border-radius: 16px;
+            padding: 25px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .dice-box {
+            font-size: 64px;
+            background: rgba(0,0,0,0.4);
+            padding: 15px 40px;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            min-width: 180px;
+        }
+
+        .bet-input-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .bet-input-group input {
+            background: #090c14;
+            border: 2px solid var(--border-color);
+            color: #fff;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 700;
+            width: 180px;
+            text-align: center;
+        }
+
+        .btn-chip {
+            background: #2d3748;
+            border: none;
+            color: #fff;
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .btn-chip:hover { background: var(--accent); color: #000; }
+
+        /* Настройки Звука */
+        .settings-bar {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            padding: 14px 20px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        /* Список Миров */
+        .world-item-card {
+            background: var(--bg-card);
+            border: 2px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            transition: all 0.2s;
+        }
+
+        .world-item-card.current {
+            border-color: var(--accent);
+            box-shadow: 0 0 20px var(--accent-glow);
+            background: var(--bg-card-hover);
+        }
+
+        .world-info h3 {
+            font-size: 18px;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+
+        /* Плавающие циферки при клике */
+        .floating-click-num {
+            position: fixed;
+            pointer-events: none;
+            font-weight: 900;
+            font-size: 22px;
+            color: var(--accent);
+            text-shadow: 0 0 10px rgba(0,0,0,0.8), 0 0 10px var(--accent-glow);
+            z-index: 9999;
+            animation: floatUp 0.8s ease-out forwards;
+        }
+
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            50% { transform: translateY(-40px) scale(1.2); }
+            100% { opacity: 0; transform: translateY(-80px) scale(0.8); }
+        }
+    </style>
+</head>
+<body data-world="1">
+
+    <div id="portal-overlay"></div>
+
+    <header>
+        <div class="stats-group">
+            <div class="stat-box">
+                <span class="stat-label">Баланс</span>
+                <span class="stat-value" id="ui-money">0 ₽</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-label">Доход в сек</span>
+                <span class="stat-value" id="ui-income">0 ₽</span>
+            </div>
+        </div>
+        <div>
+            <div class="prestige-badge" id="ui-prestige">👑 Престиж: 0</div>
+        </div>
+    </header>
+
+    <nav>
+        <button class="nav-btn active" onclick="openTab('tab-clicker', event)">⚡ Кликер</button>
+        <button class="nav-btn" onclick="openTab('tab-shop', event)">🛒 Магазин</button>
+        <button class="nav-btn" onclick="openTab('tab-upgrades', event)">🔬 Улучшения</button>
+        <button class="nav-btn" onclick="openTab('tab-cases', event)">📦 Кейсы</button>
+        <button class="nav-btn" onclick="openTab('tab-rewards', event)">🎁 Награды</button>
+        <button class="nav-btn" onclick="openTab('tab-casino', event)">🎰 Казино</button>
+        <button class="nav-btn" onclick="openTab('tab-worlds', event)">🌌 Миры</button>
+        <button class="nav-btn" onclick="openTab('tab-prestige', event)">👑 Престиж</button>
+    </nav>
+
+    <main>
+        <!-- ВКЛАДКА КЛИКЕР -->
+        <div id="tab-clicker" class="tab-content active">
+            <div class="settings-bar">
+                <span>🔊 Громкость аудио эффектов:</span>
+                <input type="range" id="sound-vol" min="0" max="1" step="0.05" value="0.8" style="width: 200px;" onchange="setVolume(this.value)">
+            </div>
+
+            <div class="boost-card">
+                <div>
+                    <h3 style="color: #ff6600; font-size: 18px;">🔥 ФОРСАЖ (x5 Доход на 15 сек)</h3>
+                    <p id="boost-desc" style="font-size: 13px; color: var(--text-sub); margin-top: 4px;">Увеличивает весь доход в 5 раз!</p>
+                </div>
+                <button class="btn-boost-trigger" id="btn-boost-act" onclick="triggerBoost()">Активировать</button>
+            </div>
+
+            <div class="clicker-panel">
+                <div class="clicker-btn-wrapper">
+                    <button class="main-click-btn" id="clicker-btn" onclick="doClick(event)">💎</button>
+                </div>
+                <div style="text-align: center;">
+                    <p style="font-size: 15px; color: var(--text-sub);">Сила клика: <b id="ui-click-power" style="color: var(--accent); font-size: 20px;">1 ₽</b></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ВКЛАДКА МАГАЗИН ЗДАНИЙ -->
+        <div id="tab-shop" class="tab-content">
+            <h2>Пассивный бизнес</h2>
+            <p style="color: var(--text-sub); margin-bottom: 10px;">Постройки приносят доход каждую секунду.</p>
+            <div class="cards-grid" id="grid-buildings"></div>
+        </div>
+
+        <!-- ВКЛАДКА УЛУЧШЕНИЯ КЛИКА -->
+        <div id="tab-upgrades" class="tab-content">
+            <h2>Улучшения силы клика</h2>
+            <p style="color: var(--text-sub); margin-bottom: 10px;">Увеличивают количество денег за один клик.</p>
+            <div class="cards-grid" id="grid-click-upgrades"></div>
+        </div>
+
+        <!-- ВКЛАДКА КЕЙСЫ -->
+        <div id="tab-cases" class="tab-content">
+            <h2>📦 Кейсы с сокровищами</h2>
+            <div class="roulette-container">
+                <div class="roulette-marker"></div>
+                <div class="roulette-track" id="roulette-track"></div>
+            </div>
+            <div class="cards-grid" id="grid-cases"></div>
+        </div>
+
+        <!-- ВКЛАДКА НАГРАДЫ -->
+        <div id="tab-rewards" class="tab-content">
+            <h2>🎁 Центр наград и бонусов</h2>
+            <div class="cards-grid">
+                <div class="card">
+                    <div>
+                        <div class="card-title">⏱️ Каждые 30 минут</div>
+                        <div class="card-sub">Получи бесплатные 100 000 ₽</div>
+                    </div>
+                    <button class="btn-buy" id="btn-reward-30m" onclick="claim30mReward()">Забрать 100 000 ₽</button>
+                </div>
+
+                <div class="card">
+                    <div>
+                        <div class="card-title">📅 Ежедневная награда</div>
+                        <div class="card-sub" id="daily-streak-info">День 1: Награда 50 000 ₽</div>
+                    </div>
+                    <button class="btn-buy" id="btn-reward-daily" onclick="claimDailyReward()">Забрать Бонус</button>
+                </div>
+
+                <div class="card">
+                    <div>
+                        <div class="card-title">⏳ Награда за время в игре</div>
+                        <div class="card-sub" id="playtime-info">Вы играете: 0 мин</div>
+                    </div>
+                    <button class="btn-buy" id="btn-reward-playtime" onclick="claimPlaytimeReward()">Получить Грант</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ВКЛАДКА КАЗИНО -->
+        <div id="tab-casino" class="tab-content">
+            <div class="casino-panel">
+                <h2>🎲 Кости (Dice Game)</h2>
+                <p style="color: var(--text-sub);">Угадай результаты броска кости от 1 до 6</p>
+                
+                <div class="dice-box" id="dice-view">🎲</div>
+
+                <div class="bet-input-group">
+                    <input type="number" id="casino-bet-amt" value="1000" min="100">
+                    <button class="btn-chip" onclick="setBetPercent(0.5)">1/2</button>
+                    <button class="btn-chip" onclick="setBetPercent(2)">x2</button>
+                    <button class="btn-chip" onclick="setBetMax()">MAX</button>
+                </div>
+
+                <div style="display: flex; gap: 15px; flex-wrap: wrap; justify-content: center;">
+                    <button class="btn-buy" style="padding: 14px 28px; width: 180px;" onclick="rollDice('low')">1 - 3 (Победа x2)</button>
+                    <button class="btn-buy" style="padding: 14px 28px; width: 180px;" onclick="rollDice('high')">4 - 6 (Победа x2)</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ВКЛАДКА МИРЫ -->
+        <div id="tab-worlds" class="tab-content">
+            <h2>🌌 Галактические Миры</h2>
+            <p style="color: var(--text-sub); margin-bottom: 15px;">Каждый следующий мир увеличивает масштабы доходов и цен!</p>
+            <div id="list-worlds"></div>
+        </div>
+
+        <!-- ВКЛАДКА ПРЕСТИЖ -->
+        <div id="tab-prestige" class="tab-content">
+            <div class="card" style="padding: 35px; text-align: center;">
+                <h2 style="font-size: 28px; color: var(--accent);">👑 Перерождение (Престиж)</h2>
+                <p style="margin: 15px 0; color: var(--text-sub); line-height: 1.6;">
+                    Сбрось свои текущие деньги и купленный бизнес, чтобы получить уровень Престижа.<br>
+                    Каждый уровень престижа удваивает общий доход и открывает путь в новые Миры!
+                </p>
+                <div style="margin: 20px 0;">
+                    <p style="font-size: 14px; color: var(--text-sub);">Стоимость следующего Престижа:</p>
+                    <h3 id="ui-prestige-cost" style="font-size: 32px; color: #fff;">1 000 000 ₽</h3>
+                </div>
+                <button class="btn-buy" onclick="performPrestige()" style="padding: 16px 40px; font-size: 16px; margin: 0 auto;">Сделать Престиж</button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Игровое состояние
+        let game = {
+            money: 0,
+            clickPowerBase: 1,
+            autoIncomeBase: 0,
+            prestige: 0,
+            currentWorld: 1,
+            volume: 0.8,
+
+            // Форсаж
+            boostActive: false,
+            boostTimeLeft: 0,
+            boostCooldown: 0,
+
+            // Время и награды
+            last30mClaim: 0,
+            lastDailyClaim: 0,
+            dailyStreak: 1,
+            totalPlayTimeSeconds: 0,
+            lastPlaytimeClaimSec: 0,
+
+            // Покупки: id -> count
+            buildings: {},
+            clickUpgrades: {}
+        };
+
+        // Базовые данные 15 Зданий (Цены/доход автоматически масштабируются под Мир)
+        const buildingsData = [
+            { id: 'b1', name: 'Авто-кликер', basePrice: 20, income: 1 },
+            { id: 'b2', name: 'Ферма Видеокарт', basePrice: 150, income: 8 },
+            { id: 'b3', name: 'Асик-Майнер', basePrice: 1200, income: 50 },
+            { id: 'b4', name: 'Серверная Стойка', basePrice: 8500, income: 320 },
+            { id: 'b5', name: 'Облачный Дата-центр', basePrice: 50000, income: 1800 },
+            { id: 'b6', name: 'Квантовый Сервер', basePrice: 300000, income: 9500 },
+            { id: 'b7', name: 'ИИ-Вычислитель', basePrice: 1800000, income: 52000 },
+            { id: 'b8', name: 'Нейросеть Скайнет', basePrice: 10000000, income: 280000 },
+            { id: 'b9', name: 'Орбитальная База', basePrice: 65000000, income: 1600000 },
+            { id: 'b10', name: 'Лунный Завод', basePrice: 400000000, income: 9000000 },
+            { id: 'b11', name: 'Марсианская Колония', basePrice: 2500000000, income: 50000000 },
+            { id: 'b12', name: 'Сфера Дайсона', basePrice: 15000000000, income: 280000000 },
+            { id: 'b13', name: 'Варп-Генератор', basePrice: 100000000000, income: 1800000000 },
+            { id: 'b14', name: 'Галактический Узел', basePrice: 800000000000, income: 12000000000 },
+            { id: 'b15', name: 'Матрица Вселенной', basePrice: 5000000000000, income: 85000000000 }
+        ];
+
+        // 10 Улучшений клика
+        const clickUpgradesData = [
+            { id: 'cu1', name: 'Пластиковый Тик', basePrice: 50, addPower: 2 },
+            { id: 'cu2', name: 'Металлический Мышь', basePrice: 400, addPower: 12 },
+            { id: 'cu3', name: 'Оптический Сенсор', basePrice: 3000, addPower: 75 },
+            { id: 'cu4', name: 'Лазерный Спуск', basePrice: 25000, addPower: 450 },
+            { id: 'cu5', name: 'Кибер-Перчатка', basePrice: 180000, addPower: 2600 },
+            { id: 'cu6', name: 'Нейро-Импульс', basePrice: 1200000, addPower: 15000 },
+            { id: 'cu7', name: 'Квантовый Нажатель', basePrice: 9000000, addPower: 95000 },
+            { id: 'cu8', name: 'Плазменный Кликер', basePrice: 60000000, addPower: 550000 },
+            { id: 'cu9', name: 'Грави-Манипулятор', basePrice: 450000000, income: 3800000 },
+            { id: 'cu10', name: 'Разрыватель Реальности', basePrice: 3000000000, addPower: 24000000 }
+        ];
+
+        // 5 Миров
+        const worldsList = [
+            { id: 1, name: '1. Кибер Неон', reqPrestige: 0, mult: 1 },
+            { id: 2, name: '2. Тёмный Пурпур', reqPrestige: 1, mult: 10 },
+            { id: 3, name: '3. Плазменный Огонь', reqPrestige: 3, mult: 100 },
+            { id: 4, name: '4. Золотая Цитадель', reqPrestige: 7, mult: 1000 },
+            { id: 5, name: '5. Космический Разум', reqPrestige: 15, mult: 10000 }
+        ];
+
+        // 5 Кейсов
+        const casesList = [
+            { id: 'case_1', name: 'Новичковый Кейс', basePrice: 500 },
+            { id: 'case_2', name: 'Бронзовый Кейс', basePrice: 20000 },
+            { id: 'case_3', name: 'Серебряный Кейс', basePrice: 500000 },
+            { id: 'case_4', name: 'Золотой Кейс', basePrice: 15000000 },
+            { id: 'case_5', name: 'Мифический Кейс', basePrice: 500000000 }
+        ];
+
+        // Звуковой синтезатор (Web Audio API)
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playAudio(type) {
+            if (game.volume <= 0) return;
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+
+            if (type === 'click') {
+                osc.frequency.setValueAtTime(350, now);
+                osc.frequency.exponentialRampToValueAtTime(700, now + 0.04);
+                gain.gain.setValueAtTime(game.volume * 0.4, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+                osc.start(now); osc.stop(now + 0.04);
+            } else if (type === 'buy') {
+                osc.frequency.setValueAtTime(250, now);
+                osc.frequency.exponentialRampToValueAtTime(500, now + 0.12);
+                gain.gain.setValueAtTime(game.volume * 0.6, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+                osc.start(now); osc.stop(now + 0.12);
+            } else if (type === 'boost') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(180, now);
+                osc.frequency.linearRampToValueAtTime(900, now + 0.35);
+                gain.gain.setValueAtTime(game.volume * 0.7, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+                osc.start(now); osc.stop(now + 0.35);
+            } else if (type === 'tick') {
+                osc.frequency.setValueAtTime(600, now);
+                gain.gain.setValueAtTime(game.volume * 0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.02);
+                osc.start(now); osc.stop(now + 0.02);
+            } else if (type === 'win') {
+                osc.frequency.setValueAtTime(440, now);
+                osc.frequency.setValueAtTime(554, now + 0.08);
+                osc.frequency.setValueAtTime(659, now + 0.16);
+                gain.gain.setValueAtTime(game.volume * 0.7, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+                osc.start(now); osc.stop(now + 0.35);
+            }
+        }
+
+        function setVolume(v) {
+            game.volume = parseFloat(v);
+        }
+
+        // Вычисление текущего общего множителя
+        function getGlobalMultiplier() {
+            let worldMult = worldsList[game.currentWorld - 1].mult;
+            let prestigeMult = Math.pow(2, game.prestige);
+            let boostMult = game.boostActive ? 5 : 1;
+            return worldMult * prestigeMult * boostMult;
+        }
+
+        // Клик
+        function doClick(e) {
+            let earned = game.clickPowerBase * getGlobalMultiplier();
+            game.money += earned;
+            playAudio('click');
+
+            // Анимация вылетающей цифры
+            const floatNum = document.createElement('div');
+            floatNum.className = 'floating-click-num';
+            floatNum.innerText = '+' + formatNumber(earned) + ' ₽';
+            floatNum.style.left = (e.clientX - 20) + 'px';
+            floatNum.style.top = (e.clientY - 30) + 'px';
+            document.body.appendChild(floatNum);
+
+            setTimeout(() => floatNum.remove(), 800);
+            updateUI();
+        }
+
+        // Форсаж
+        function triggerBoost() {
+            if (game.boostCooldown > 0 || game.boostActive) return;
+            game.boostActive = true;
+            game.boostTimeLeft = 15;
+            game.boostCooldown = 60;
+            playAudio('boost');
+            document.getElementById('clicker-btn').classList.add('boosted');
+            updateUI();
+        }
+
+        // Главный цикл (Каждую 1 сек)
+        setInterval(() => {
+            let earnedPerSec = game.autoIncomeBase * getGlobalMultiplier();
+            game.money += earnedPerSec;
+            game.totalPlayTimeSeconds++;
+
+            // Обработка таймеров буста
+            if (game.boostActive) {
+                game.boostTimeLeft--;
+                if (game.boostTimeLeft <= 0) {
+                    game.boostActive = false;
+                    document.getElementById('clicker-btn').classList.remove('boosted');
+                }
+            }
+            if (game.boostCooldown > 0) {
+                game.boostCooldown--;
+            }
+
+            updateUI();
+            saveGame();
+        }, 1000);
+
+        // Покупка Зданий
+        function buyBuilding(id) {
+            let b = buildingsData.find(x => x.id === id);
+            let count = game.buildings[id] || 0;
+            let worldMult = worldsList[game.currentWorld - 1].mult;
+            let price = Math.floor(b.basePrice * Math.pow(1.15, count) * worldMult);
+
+            if (game.money >= price) {
+                game.money -= price;
+                game.buildings[id] = count + 1;
+                game.autoIncomeBase += b.income;
+                playAudio('buy');
+                renderBuildings();
+                updateUI();
+            } else {
+                alert('Недостаточно денег!');
+            }
+        }
+
+        // Покупка Улучшений Клика
+        function buyClickUpgrade(id) {
+            let u = clickUpgradesData.find(x => x.id === id);
+            let count = game.clickUpgrades[id] || 0;
+            let worldMult = worldsList[game.currentWorld - 1].mult;
+            let price = Math.floor(u.basePrice * Math.pow(1.3, count) * worldMult);
+
+            if (game.money >= price) {
+                game.money -= price;
+                game.clickUpgrades[id] = count + 1;
+                game.clickPowerBase += (u.addPower || u.income || 1);
+                playAudio('buy');
+                renderClickUpgrades();
+                updateUI();
+            } else {
+                alert('Недостаточно денег!');
+            }
+        }
+
+        // Рулетка / Открытие кейса
+        function openCase(caseId) {
+            let c = casesList.find(x => x.id === caseId);
+            let worldMult = worldsList[game.currentWorld - 1].mult;
+            let price = c.basePrice * worldMult;
+
+            if (game.money < price) {
+                alert('Недостаточно денег!');
+                return;
+            }
+
+            game.money -= price;
+            updateUI();
+
+            const track = document.getElementById('roulette-track');
+            track.style.transition = 'none';
+            track.style.transform = 'translateX(0px)';
+            track.innerHTML = '';
+
+            const possiblePrizes = [
+                { name: '100 ₽', mult: 0.1, rarity: 'rarity-common' },
+                { name: '1 000 ₽', mult: 0.5, rarity: 'rarity-common' },
+                { name: '5 000 ₽', mult: 2, rarity: 'rarity-rare' },
+                { name: '25 000 ₽', mult: 5, rarity: 'rarity-epic' },
+                { name: '100 000 ₽', mult: 15, rarity: 'rarity-legendary' },
+                { name: '🔥 ДЖЕКПОТ', mult: 50, rarity: 'rarity-mythic' }
+            ];
+
+            let strip = [];
+            for (let i = 0; i < 45; i++) {
+                let p = possiblePrizes[Math.floor(Math.random() * possiblePrizes.length)];
+                strip.push(p);
+            }
+
+            // Выигранный предмет на 36 слоте
+            let winningItem = strip[36];
+
+            strip.forEach(item => {
+                let div = document.createElement('div');
+                div.className = `roulette-card ${item.rarity}`;
+                div.innerHTML = `<div>${item.name}</div>`;
+                track.appendChild(div);
+            });
+
+            setTimeout(() => {
+                track.style.transition = 'transform 4.5s cubic-bezier(0.12, 0.8, 0.15, 1)';
+                let cardWidth = 122; // 110 + margins
+                let offset = -(36 * cardWidth - 140);
+                track.style.transform = `translateX(${offset}px)`;
+
+                let tickCounter = 0;
+                let tInt = setInterval(() => {
+                    playAudio('tick');
+                    tickCounter++;
+                    if (tickCounter > 22) clearInterval(tInt);
+                }, 180);
+            }, 50);
+
+            setTimeout(() => {
+                let prizeVal = price * winningItem.mult;
+                game.money += prizeVal;
+                playAudio('win');
+                alert(`🎉 Вы получили из кейса: ${formatNumber(prizeVal)} ₽!`);
+                updateUI();
+            }, 4700);
+        }
+
+        // Казино - Кости
+        function setBetPercent(pct) {
+            let input = document.getElementById('casino-bet-amt');
+            input.value = Math.max(100, Math.floor(game.money * pct));
+        }
+
+        function setBetMax() {
+            let input = document.getElementById('casino-bet-amt');
+            input.value = Math.max(100, Math.floor(game.money));
+        }
+
+        function rollDice(side) {
+            let bet = parseInt(document.getElementById('casino-bet-amt').value);
+            if (isNaN(bet) || bet <= 0 || bet > game.money) {
+                alert('Неверная ставка!');
+                return;
+            }
+
+            game.money -= bet;
+            let roll = Math.floor(Math.random() * 6) + 1;
+            document.getElementById('dice-view').innerText = '🎲 ' + roll;
+
+            let isWin = (side === 'low' && roll <= 3) || (side === 'high' && roll >= 4);
+
+            if (isWin) {
+                let winAmt = bet * 2;
+                game.money += winAmt;
+                playAudio('win');
+                alert(`Вы выиграли ${formatNumber(winAmt)} ₽!`);
+            } else {
+                playAudio('click');
+            }
+            updateUI();
+        }
+
+        // Награды
+        function claim30mReward() {
+            const now = Date.now();
+            if (now - game.last30mClaim >= 30 * 60 * 1000) {
+                game.money += 100000;
+                game.last30mClaim = now;
+                playAudio('win');
+                alert('Забрано 100 000 ₽!');
+                updateUI();
+            }
+        }
+
+        function claimDailyReward() {
+            const now = Date.now();
+            if (now - game.lastDailyClaim >= 24 * 3600 * 1000) {
+                let reward = 50000 * game.dailyStreak * game.currentWorld;
+                game.money += reward;
+                game.lastDailyClaim = now;
+                game.dailyStreak++;
+                playAudio('win');
+                alert(`Ежедневная награда дня ${game.dailyStreak - 1}: ${formatNumber(reward)} ₽!`);
+                updateUI();
+            } else {
+                alert('Ежедневный бонус пока недоступен!');
+            }
+        }
+
+        function claimPlaytimeReward() {
+            if (game.totalPlayTimeSeconds - game.lastPlaytimeClaimSec >= 300) {
+                let reward = 30000 * game.currentWorld;
+                game.money += reward;
+                game.lastPlaytimeClaimSec = game.totalPlayTimeSeconds;
+                playAudio('win');
+                alert(`Награда за время в игре: ${formatNumber(reward)} ₽!`);
+                updateUI();
+            } else {
+                alert('Поиграйте ещё немного (нужно хотя бы 5 минут с прошлого получения)!');
+            }
+        }
+
+        // Престиж (Рост цены в 10 раз!)
+        function getPrestigeCost() {
+            return 1000000 * Math.pow(10, game.prestige);
+        }
+
+        function performPrestige() {
+            let cost = getPrestigeCost();
+            if (game.money < cost) {
+                alert('Недостаточно денег для Престижа!');
+                return;
+            }
+
+            game.prestige++;
+            game.money = 0;
+            game.clickPowerBase = 1;
+            game.autoIncomeBase = 0;
+            game.buildings = {};
+            game.clickUpgrades = {};
+
+            playAudio('win');
+            alert(`👑 Поздравляем с перерождением! Престиж: ${game.prestige}`);
+            
+            renderBuildings();
+            renderClickUpgrades();
+            renderWorlds();
+            updateUI();
+        }
+
+        // Переключение мира
+        function selectWorld(worldId) {
+            let w = worldsList.find(x => x.id === worldId);
+            if (game.prestige < w.reqPrestige) {
+                alert(`Требуется минимум ${w.reqPrestige} Престижа!`);
+                return;
+            }
+
+            const portal = document.getElementById('portal-overlay');
+            portal.classList.add('active');
+
+            setTimeout(() => {
+                game.currentWorld = worldId;
+                document.body.setAttribute('data-world', worldId);
+                renderBuildings();
+                renderClickUpgrades();
+                renderCases();
+                renderWorlds();
+                updateUI();
+            }, 500);
+
+            setTimeout(() => {
+                portal.classList.remove('active');
+            }, 1000);
+        }
+
+        // Обновление всей графики интерфейса
+        function updateUI() {
+            document.getElementById('ui-money').innerText = formatNumber(Math.floor(game.money)) + ' ₽';
+            let globalMult = getGlobalMultiplier();
+            document.getElementById('ui-income').innerText = formatNumber(game.autoIncomeBase * globalMult) + ' ₽';
+            document.getElementById('ui-click-power').innerText = formatNumber(game.clickPowerBase * globalMult) + ' ₽';
+            document.getElementById('ui-prestige').innerText = `👑 Престиж: ${game.prestige}`;
+            document.getElementById('ui-prestige-cost').innerText = formatNumber(getPrestigeCost()) + ' ₽';
+
+            // Кнопка Форсаж
+            const btnBoost = document.getElementById('btn-boost-act');
+            const boostDesc = document.getElementById('boost-desc');
+            if (game.boostActive) {
+                btnBoost.disabled = true;
+                btnBoost.innerText = `АКТИВЕН (${game.boostTimeLeft}с)`;
+                boostDesc.innerText = `🔥 Форсаж даёт x5 ко всему доходу!`;
+            } else if (game.boostCooldown > 0) {
+                btnBoost.disabled = true;
+                btnBoost.innerText = `Перезарядка (${game.boostCooldown}с)`;
+                boostDesc.innerText = `Ожидание восстановления...`;
+            } else {
+                btnBoost.disabled = false;
+                btnBoost.innerText = `Активировать`;
+                boostDesc.innerText = `Увеличивает весь доход в 5 раз!`;
+            }
+
+            // Награда 30 минут
+            const btn30m = document.getElementById('btn-reward-30m');
+            const now = Date.now();
+            const diff30m = now - game.last30mClaim;
+            if (diff30m < 30 * 60 * 1000) {
+                btn30m.disabled = true;
+                let leftSec = Math.ceil((30 * 60 * 1000 - diff30m) / 1000);
+                let m = Math.floor(leftSec / 60);
+                let s = leftSec % 60;
+                btn30m.innerText = `Ждать ${m}:${s < 10 ? '0' : ''}${s}`;
+            } else {
+                btn30m.disabled = false;
+                btn30m.innerText = `Забрать 100 000 ₽`;
+            }
+
+            // Время в игре
+            let mins = Math.floor(game.totalPlayTimeSeconds / 60);
+            document.getElementById('playtime-info').innerText = `Вы играете: ${mins} мин`;
+            document.getElementById('daily-streak-info').innerText = `День ${game.dailyStreak}: Награда ${formatNumber(50000 * game.dailyStreak * game.currentWorld)} ₽`;
+        }
+
+        // Отрисовка Зданий Магазина
+        function renderBuildings() {
+            const container = document.getElementById('grid-buildings');
+            container.innerHTML = '';
+            let worldMult = worldsList[game.currentWorld - 1].mult;
+
+            buildingsData.forEach(b => {
+                let count = game.buildings[b.id] || 0;
+                let price = Math.floor(b.basePrice * Math.pow(1.15, count) * worldMult);
+                let inc = b.income * worldMult;
+
+                let div = document.createElement('div');
+                div.className = 'card';
+                div.innerHTML = `
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">${b.name}</div>
+                            <div class="card-sub">+${formatNumber(inc)} ₽/сек</div>
+                        </div>
+                        <b style="color: var(--accent); font-size: 18px;">${count}</b>
+                    </div>
+                    <button class="btn-buy" onclick="buyBuilding('${b.id}')">Купить (${formatNumber(price)} ₽)</button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // Отрисовка Улучшений Клика
+        function renderClickUpgrades() {
+            const container = document.getElementById('grid-click-upgrades');
+            container.innerHTML = '';
+            let worldMult = worldsList[game.currentWorld - 1].mult;
+
+            clickUpgradesData.forEach(u => {
+                let count = game.clickUpgrades[u.id] || 0;
+                let price = Math.floor(u.basePrice * Math.pow(1.3, count) * worldMult);
+                let pwr = (u.addPower || u.income || 1) * worldMult;
+
+                let div = document.createElement('div');
+                div.className = 'card';
+                div.innerHTML = `
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">${u.name}</div>
+                            <div class="card-sub">+${formatNumber(pwr)} к клику</div>
+                        </div>
+                        <b style="color: var(--accent); font-size: 18px;">${count}</b>
+                    </div>
+                    <button class="btn-buy" onclick="buyClickUpgrade('${u.id}')">Улучшить (${formatNumber(price)} ₽)</button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // Отрисовка Кейсов
+        function renderCases() {
+            const container = document.getElementById('grid-cases');
+            container.innerHTML = '';
+            let worldMult = worldsList[game.currentWorld - 1].mult;
+
+            casesList.forEach(c => {
+                let p = c.basePrice * worldMult;
+                let div = document.createElement('div');
+                div.className = 'card';
+                div.innerHTML = `
+                    <div class="card-title">${c.name}</div>
+                    <div class="card-sub">Испытай удачу и выбей куш!</div>
+                    <button class="btn-buy" onclick="openCase('${c.id}')">Открыть (${formatNumber(p)} ₽)</button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // Отрисовка списка Миров
+        function renderWorlds() {
+            const container = document.getElementById('list-worlds');
+            container.innerHTML = '';
+
+            worldsList.forEach(w => {
+                let isCurrent = game.currentWorld === w.id;
+                let isUnlocked = game.prestige >= w.reqPrestige;
+
+                let div = document.createElement('div');
+                div.className = `world-item-card ${isCurrent ? 'current' : ''}`;
+                div.innerHTML = `
+                    <div class="world-info">
+                        <h3>${w.name} ${isCurrent ? ' 🌟' : ''}</h3>
+                        <p style="font-size: 13px; color: var(--text-sub);">Множитель дохода: x${formatNumber(w.mult)} | Нужен Престиж: ${w.reqPrestige}</p>
+                    </div>
+                    <button class="btn-buy" style="width: 140px;" ${!isUnlocked || isCurrent ? 'disabled' : ''} onclick="selectWorld(${w.id})">
+                        ${isCurrent ? 'Текущий' : (isUnlocked ? 'Войти' : 'Закрыто')}
+                    </button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // Вкладки
+        function openTab(tabId, event) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+
+            document.getElementById(tabId).classList.add('active');
+            if (event) event.target.classList.add('active');
+        }
+
+        // Форматирование больших чисел
+        function formatNumber(num) {
+            return num.toLocaleString('ru-RU');
+        }
+
+        // Сохранение и загрузка в localStorage
+        function saveGame() {
+            localStorage.setItem('clicker_save_v2', JSON.stringify(game));
+        }
+
+        function loadGame() {
+            let saved = localStorage.getItem('clicker_save_v2');
+            if (saved) {
+                try {
+                    let obj = JSON.parse(saved);
+                    game = Object.assign(game, obj);
+                    document.body.setAttribute('data-world', game.currentWorld);
+                } catch(e) {}
+            }
+        }
+
+        // Инициализация при старте
+        loadGame();
+        renderBuildings();
+        renderClickUpgrades();
+        renderCases();
+        renderWorlds();
+        updateUI();
+    </script>
+</body>
+</html>
